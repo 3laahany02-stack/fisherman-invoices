@@ -386,7 +386,10 @@
   <section>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <h2 class="section-title" style="margin:0;">الفواتير المحفوظة</h2>
-      <button class="icon-btn" id="backToNewBtn">فاتورة جديدة +</button>
+      <div style="display:flex;gap:8px;">
+        <button class="icon-btn" id="exportAllBtn">📥 تصدير الكل</button>
+        <button class="icon-btn" id="backToNewBtn">فاتورة جديدة +</button>
+      </div>
     </div>
   </section>
   <section id="invoiceListWrap"></section>
@@ -686,6 +689,50 @@ async function listInvoices(){
 async function deleteInvoiceFromStorage(id){
   try{ await window.storage.delete('invoice:'+id, false); }catch(e){}
 }
+/* ================= GOOGLE SHEET SYNC (إلزامي — كل فاتورة تتحفظ تترحل أوتوماتيك) ================= */
+const SHEET_SYNC_URL = "https://script.google.com/macros/s/AKfycbwJAtJqvzB_K-J2Tp9lS5BJDKuLGG34C39HEpk2GfUq1-fTGFQQhNZlKg-7AlS70v-N7Q/exec";
+async function queueForSync(invoiceId){
+  try{
+    let queue = [];
+    const r = await window.storage.get('sync-queue', false);
+    if(r && r.value) queue = JSON.parse(r.value);
+    if(!queue.includes(invoiceId)) queue.push(invoiceId);
+    await window.storage.set('sync-queue', JSON.stringify(queue), false);
+  }catch(e){}
+}
+async function sendToSheet(invoice){
+  await fetch(SHEET_SYNC_URL, {
+    method: 'POST',
+    mode: 'no-cors', /* Apps Script Web App ماعندوش CORS headers، فبنبعت وبس من غير ما نقرأ الرد */
+    headers: {'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(invoice)
+  });
+}
+async function syncInvoiceToSheet(invoice){
+  try{
+    await sendToSheet(invoice);
+    return {ok:true};
+  }catch(e){
+    await queueForSync(invoice.id);
+    return {ok:false};
+  }
+}
+async function retryPendingSyncs(){
+  let queue = [];
+  try{
+    const r = await window.storage.get('sync-queue', false);
+    if(r && r.value) queue = JSON.parse(r.value);
+  }catch(e){}
+  if(!queue.length) return;
+  const remaining = [];
+  for(const id of queue){
+    try{
+      const rec = await window.storage.get('invoice:'+id, false);
+      if(rec && rec.value) await sendToSheet(JSON.parse(rec.value));
+    }catch(e){ remaining.push(id); }
+  }
+  try{ await window.storage.set('sync-queue', JSON.stringify(remaining), false); }catch(e){}
+}
 async function saveDraft(){
   try{ await window.storage.set('draft-invoice', JSON.stringify({state, rowSeq}), false); }catch(e){}
 }
@@ -806,7 +853,7 @@ function renderPartyCard(){
 
 /* ================= RENDER: ITEMS ================= */
 function addItemRow(){
-  state.items.push({rowId: rowSeq++, productId:null, unit:'piece', qty:1, price:0});
+  state.items.push({rowId: rowSeq++, productId:null, customName:'', unit:'dozen', qty:1, price:0});
   renderItems();
   updateTotals();
 }
@@ -874,7 +921,7 @@ function renderItems(){
         <label>الصنف</label>
         <div class="search-wrap">
           <input type="text" class="prod-search" data-row="${item.rowId}"
-            placeholder="اكتب اسم الصنف..." value="${product ? product.name : ""}" autocomplete="off">
+            placeholder="اكتب اسم الصنف..." value="${product ? product.name : (item.customName||"")}" autocomplete="off">
           <div class="search-results hidden" data-row="${item.rowId}"></div>
         </div>
       </div>
@@ -897,17 +944,33 @@ function bindItemEvents(){
       resultsBox.innerHTML = list.map(m=> `<div class="opt" data-row="${rowId}" data-pid="${m.id}"><span>${m.name}</span><span class="p">${fmt(m.price)}</span></div>`).join("");
       resultsBox.classList.remove('hidden');
       resultsBox.querySelectorAll('.opt').forEach(o=>{
-        o.onclick = ()=>{
+        o.onmousedown = (e)=>{
+          e.preventDefault(); // يمنع الـ blur انه يحصل قبل ما نختار
           const item = state.items.find(it=>it.rowId===rowId);
           const product = PRODUCTS.find(p=>p.id===Number(o.dataset.pid));
           item.productId = product.id;
+          item.customName = product.name;
           item.price = unitPrice(product, item.unit); // السعر بيتحسب أوتوماتيك حسب الوحدة
           renderItems();
           updateTotals();
         };
       });
     }
-    inp.oninput = ()=> showMatches(inp.value.trim());
+    inp.oninput = ()=>{
+      const val = inp.value;
+      const item = state.items.find(it=>it.rowId===rowId);
+      item.customName = val;
+      if(item.productId != null){
+        // المستخدم بدأ يعدّل النص يدويًا بعد ما كان مختار صنف من القائمة
+        item.productId = null;
+        item.price = 0;
+        const priceInput = document.querySelector(`.price-input[data-row="${rowId}"]`);
+        if(priceInput) priceInput.value = item.price;
+        refreshLineTotalOnly(rowId);
+        updateTotals();
+      }
+      showMatches(val.trim());
+    };
     inp.onfocus = ()=>{ inp.select(); showMatches(inp.value.trim()); };
     inp.onblur = ()=> setTimeout(()=> resultsBox.classList.add('hidden'), 150);
   });
@@ -959,7 +1022,7 @@ function toggleTotalsSection(){
 }
 function updateSaveEnabled(){
   const isTransfer = state.type === 'transfer';
-  const hasItems = state.items.length > 0 && state.items.some(it=> it.productId!=null && it.qty > 0);
+  const hasItems = state.items.length > 0 && state.items.some(it=> (it.productId!=null || (it.customName && it.customName.trim()!=='')) && it.qty > 0);
 
   if(isTransfer){
     document.getElementById('saveBtn').disabled = !hasItems;
@@ -1062,7 +1125,8 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
     note: state.note,
     items: state.items.map(it=>{
       const p = PRODUCTS.find(pp=>pp.id===it.productId);
-      return {name: p?p.name:"صنف", unit: it.unit, qty: it.qty, price: it.price, total: lineTotal(it)};
+      const name = p ? p.name : (it.customName && it.customName.trim()!=='' ? it.customName.trim() : "صنف");
+      return {name, unit: it.unit, qty: it.qty, price: it.price, total: lineTotal(it)};
     }),
     total: grandTotal(),
     pay: {...state.pay},
@@ -1070,9 +1134,15 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
     createdAt: Date.now()
   };
   const ok = await saveInvoiceToStorage(invoice);
-  showToast(ok ? 'تم حفظ الفاتورة' : 'الفاتورة اتحفظت مؤقت بس حصلت مشكلة في التخزين');
+  showToast(ok ? 'تم الحفظ وجاري الترحيل...' : 'الفاتورة اتحفظت مؤقت بس حصلت مشكلة في التخزين');
   resetForm();
   openReceipt(invoice);
+
+  // الترحيل في الخلفية عشان ميعطلش الواجهة
+  syncInvoiceToSheet(invoice).then(sync => {
+    if(sync.ok) showToast('الفاتورة ترحّلت للإكسل ✅');
+    else showToast('الفاتورة هتترحّل للإكسل أول ما النت يرجع');
+  });
 });
 
 function showToast(msg){
@@ -1125,6 +1195,38 @@ async function renderInvoiceList(){
     wrap.appendChild(el);
   });
 }
+
+/* ================= EXPORT ALL INVOICES ================= */
+document.getElementById('exportAllBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('exportAllBtn');
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.textContent = 'جارِ التصدير...';
+  try {
+    const invoices = await listInvoices();
+    if(invoices.length === 0){
+      showToast('مفيش فواتير للتصدير');
+      btn.disabled = false;
+      btn.textContent = origText;
+      return;
+    }
+    const json = JSON.stringify(invoices, null, 2);
+    const blob = new Blob([json], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `فواتير-الصياد-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast(`✅ تم تصدير ${invoices.length} فاتورة`);
+  } catch(e) {
+    showToast('❌ حصلت مشكلة في التصدير');
+  }
+  btn.disabled = false;
+  btn.textContent = origText;
+});
 
 /* ================= RECEIPT VIEW ================= */
 function openReceipt(invoice){
@@ -1250,6 +1352,7 @@ async function init(){
     toggleTotalsSection();
     updateTotals();
   }
+  retryPendingSyncs();
 }
 init();
 
