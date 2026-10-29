@@ -768,6 +768,7 @@ let state = {
   type: "sale",
   party: "",
   area: "",
+  deviceName: "",
   fromStore: "",
   toStore: "",
   note: "",
@@ -776,6 +777,7 @@ let state = {
 };
 let rowSeq = 1;
 let currentReceiptInvoiceId = null;
+let savedDeviceName = "";
 
 /* ================= STORAGE HELPERS ================= */
 async function loadShopName(){
@@ -789,6 +791,21 @@ async function loadShopName(){
 }
 async function saveShopName(name){
   try{ await window.storage.set('shop-settings', JSON.stringify({name}), false); }catch(e){}
+}
+async function loadDeviceName(){
+  try{
+    const r = await window.storage.get('device-settings', false);
+    if(r && r.value){
+      const s = JSON.parse(r.value);
+      savedDeviceName = s.deviceName || "";
+      state.deviceName = savedDeviceName;
+    }
+  }catch(e){}
+}
+async function saveDeviceName(name){
+  savedDeviceName = name;
+  state.deviceName = name;
+  try{ await window.storage.set('device-settings', JSON.stringify({deviceName: name}), false); }catch(e){}
 }
 async function nextInvoiceNumber(type){
   let counters = {sale:0,purchase:0,transfer:0,return:0};
@@ -922,6 +939,7 @@ function renderPartyCard(){
   const card = document.getElementById('partyCard');
   const title = document.getElementById('partyTitle');
   const t = typeMeta(state.type);
+  const currentDevName = state.deviceName || savedDeviceName || "";
   if(state.type === 'transfer'){
     title.textContent = "بيانات التحويل";
     card.innerHTML = `
@@ -929,10 +947,14 @@ function renderPartyCard(){
         <div class="field"><label>من مخزن</label><input id="fromStoreInput" value="${state.fromStore||""}" placeholder="مثال: المخزن الرئيسي"></div>
         <div class="field"><label>إلى مخزن</label><input id="toStoreInput" value="${state.toStore||""}" placeholder="مثال: فرع..."></div>
       </div>
-      <div class="field"><label>ملاحظات (اختياري)</label><input id="noteInput" value="${state.note||""}"></div>
+      <div class="two-col">
+        <div class="field"><label>المندوب / الجهاز (اسم الشيت) 📱</label><input id="deviceNameInput" value="${currentDevName}" placeholder="مثال: أحمد أو فرع 1"></div>
+        <div class="field"><label>ملاحظات (اختياري)</label><input id="noteInput" value="${state.note||""}"></div>
+      </div>
     `;
     document.getElementById('fromStoreInput').addEventListener('input', e=>{ state.fromStore = e.target.value; saveDraft(); });
     document.getElementById('toStoreInput').addEventListener('input', e=>{ state.toStore = e.target.value; saveDraft(); });
+    document.getElementById('deviceNameInput').addEventListener('input', e=>{ state.deviceName = e.target.value; saveDeviceName(e.target.value); saveDraft(); });
     document.getElementById('noteInput').addEventListener('input', e=>{ state.note = e.target.value; saveDraft(); });
   } else {
     title.textContent = "بيانات الفاتورة";
@@ -951,7 +973,10 @@ function renderPartyCard(){
           <div class="area-dropdown" id="areaDropdown">${areaOptionsHtml}</div>
         </div>
       </div>
-      <div class="field"><label>ملاحظات (اختياري)</label><input id="noteInput" value="${state.note||""}"></div>
+      <div class="two-col">
+        <div class="field"><label>المندوب / الجهاز (اسم الشيت) 📱</label><input id="deviceNameInput" value="${currentDevName}" placeholder="مثال: أحمد أو فرع 1"></div>
+        <div class="field"><label>ملاحظات (اختياري)</label><input id="noteInput" value="${state.note||""}"></div>
+      </div>
     `;
     function setupAutocomplete(inputEl, dropdownEl, onChange){
       function filterOptions(){
@@ -987,6 +1012,7 @@ function renderPartyCard(){
     }
     setupAutocomplete(document.getElementById('partyInput'), document.getElementById('partyDropdown'), v=>{ state.party = v; updateSaveEnabled(); saveDraft(); });
     setupAutocomplete(document.getElementById('areaInput'), document.getElementById('areaDropdown'), v=>{ state.area = v; updateSaveEnabled(); saveDraft(); });
+    document.getElementById('deviceNameInput').addEventListener('input', e=>{ state.deviceName = e.target.value; saveDeviceName(e.target.value); saveDraft(); });
     document.getElementById('noteInput').addEventListener('input', e=>{ state.note = e.target.value; saveDraft(); });
   }
 }
@@ -1269,7 +1295,7 @@ function refreshQuickPayHighlight(){
 
 /* ================= RESET / SAVE ================= */
 function resetForm(){
-  state = {type: state.type, party:"", area:"", fromStore:"", toStore:"", note:"", items:[], pay:{vodafone:0,instapay:0,cash:0,credit:0}};
+  state = {type: state.type, party:"", area:"", deviceName: savedDeviceName || "", fromStore:"", toStore:"", note:"", items:[], pay:{vodafone:0,instapay:0,cash:0,credit:0}};
   document.getElementById('payVodafone').value = "";
   document.getElementById('payInstapay').value = "";
   document.getElementById('payCash').value = "";
@@ -1288,11 +1314,13 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
   const num = await nextInvoiceNumber(state.type);
   const invoiceNumber = `${t.prefix}-${String(num).padStart(4,'0')}`;
   const shopName = document.getElementById('shopNameInput').value || "الصياد";
+  const deviceName = (state.deviceName || savedDeviceName || "").trim();
   const invoice = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
     number: invoiceNumber,
     type: state.type,
     shopName,
+    deviceName: deviceName || "عام",
     party: state.party,
     area: state.area,
     fromStore: state.fromStore,
@@ -1372,7 +1400,7 @@ async function renderInvoiceList(){
       <div class="inv-badge ${inv.type}"></div>
       <div class="inv-info">
         <div class="top"><span>${inv.number}</span><span>${rightVal}</span></div>
-        <div class="bottom"><span>${partyText}</span><span>${inv.date}</span></div>
+        <div class="bottom"><span>${inv.deviceName ? `<span style="font-size:11px;background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:4px;margin-left:4px;">${inv.deviceName}</span>` : ""}${partyText}</span><span>${inv.date}</span></div>
       </div>
     `;
     el.addEventListener('click', ()=> openReceipt(inv));
@@ -1481,6 +1509,7 @@ function openReceipt(invoice){
     <div class="r-shop">${invoice.shopName}</div>
     <div class="r-center"><span class="r-type-badge ${invoice.type}">${t.label}</span></div>
     <div class="r-meta"><span>رقم: ${invoice.number}</span><span>${invoice.date}</span></div>
+    ${invoice.deviceName ? `<div class="r-meta" style="margin-top:-6px;font-size:11px;color:#64748b;"><span>المندوب: ${invoice.deviceName}</span></div>` : ""}
     ${partyLine ? `<div class="r-party">${partyLine}</div>` : ""}
     <table class="r-table">
       <thead><tr><th>الصنف</th><th>الوحدة</th><th class="num">الكمية</th>${isTransfer?"":'<th class="num">السعر</th><th class="num">الإجمالي</th>'}</tr></thead>
@@ -2068,11 +2097,13 @@ document.getElementById('excelStockInput').addEventListener('change', async (e) 
 document.getElementById('shopNameInput').addEventListener('blur', e=> saveShopName(e.target.value));
 loadShopName();
 async function init(){
+  await loadDeviceName();
   await loadStockBalances();
   await loadProductsCatalog();
   const draft = await loadDraft();
   if(draft && draft.state && Array.isArray(draft.state.items) && draft.state.items.length > 0){
     state = draft.state;
+    if(!state.deviceName && savedDeviceName) state.deviceName = savedDeviceName;
     rowSeq = draft.rowSeq || (Math.max(0,...state.items.map(it=>it.rowId)) + 1);
     renderTypeGrid();
     renderPartyCard();
