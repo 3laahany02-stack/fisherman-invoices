@@ -1,5 +1,5 @@
-const CACHE_NAME = 'invoice-app-v1';
-const ASSETS = ['./', './index.html'];
+const CACHE_NAME = 'invoice-app-v13';
+const ASSETS = ['./', './index.html', './xlsx.full.min.js', './sayad_stock_template.xlsx'];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -17,9 +17,25 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Cache-first: يفتح من الذاكرة فورًا، ويحدّث النسخة في الخلفية لو النت متاح
+// Network-first for HTML so updates load instantly, cache-first fallback for offline
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  const isHtml = event.request.mode === 'navigate' || event.request.url.includes('.html');
+  if (isHtml) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const network = fetch(event.request)
