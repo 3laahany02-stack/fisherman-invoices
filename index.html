@@ -74,12 +74,14 @@
     padding:14px 16px 10px;
     display:flex;align-items:center;justify-content:space-between;
     border-bottom:1px solid var(--line);
+    user-select:none;-webkit-user-select:none;
   }
   .shopname{
     font-weight:800;font-size:19px;color:var(--brand-ink);
     background:transparent;border:none;outline:none;
     padding:4px 2px;max-width:100%;
     border-bottom:1px dashed transparent;
+    user-select:auto;-webkit-user-select:auto;
   }
   .shopname:focus{border-bottom:1px dashed var(--brand);}
   .topbar-brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1;}
@@ -90,7 +92,10 @@
     border-radius:999px;padding:8px 14px;font-family:inherit;
     font-weight:600;font-size:13px;color:var(--ink);cursor:pointer;
     box-shadow:var(--shadow);
+    user-select:none;-webkit-user-select:none;outline:none;
+    -webkit-tap-highlight-color:transparent;
   }
+  .icon-btn:focus{outline:none;}
   .icon-btn:active{transform:scale(0.97);}
 
   section{padding:16px 0;}
@@ -407,7 +412,7 @@
       📱 <span id="topbarDeviceNameTxt">المندوب</span>
     </button>
   </div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+  <div style="display:flex;gap:6px;flex-wrap:wrap;user-select:none;-webkit-user-select:none;">
     <button class="icon-btn" id="navStockBtn">📦 المخزن</button>
     <button class="icon-btn" id="navLedgerBtn">📊 حركة صنف</button>
     <button class="icon-btn" id="navPaymentsBtn" style="color:#0284c7;border-color:#bae6fd;background:#f0f9ff;font-weight:700;">💵 سدادات</button>
