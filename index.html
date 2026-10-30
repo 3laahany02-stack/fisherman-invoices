@@ -842,7 +842,7 @@ async function deleteInvoiceFromStorage(id){
   try{ await window.storage.delete('invoice:'+id, false); }catch(e){}
 }
 /* ================= GOOGLE SHEET SYNC (إلزامي — كل فاتورة تتحفظ تترحل أوتوماتيك) ================= */
-const SHEET_SYNC_URL = "https://script.google.com/macros/s/AKfycbwJAtJqvzB_K-J2Tp9lS5BJDKuLGG34C39HEpk2GfUq1-fTGFQQhNZlKg-7AlS70v-N7Q/exec";
+const SHEET_SYNC_URL = "https://script.google.com/macros/s/AKfycbx_4g0cIYSpM8K_qLhv-Z9DCdRDQ-eol9tku4W8RvjIxyL4Iz1bRs_X0yqTPz3c_ja6BA/exec";
 async function queueForSync(invoiceId){
   try{
     let queue = [];
