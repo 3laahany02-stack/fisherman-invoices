@@ -373,6 +373,18 @@
   .stock-badge.warning{background:#FEF7E0;color:#B06000;}
   .stock-badge.danger{background:#FCE8E6;color:#C5221F;}
 
+  /* ================= ITEM MOVEMENT LEDGER ============ */
+  .ledger-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .ledger-table th{
+    position:sticky;top:0;background:#F8FAFC;color:#334155;padding:10px 8px;font-weight:800;
+    border-bottom:2px solid #E2E8F0;text-align:right;white-space:nowrap;z-index:2;
+  }
+  .ledger-table td{padding:10px 8px;border-bottom:1px solid #F1F5F9;vertical-align:middle;}
+  .ledger-table tr:hover td{background:#F8FAFC;}
+  .badge-in{background:#DCFCE7;color:#15803D;padding:2px 8px;border-radius:6px;font-weight:700;display:inline-block;}
+  .badge-out{background:#FEE2E2;color:#B91C1C;padding:2px 8px;border-radius:6px;font-weight:700;display:inline-block;}
+  .badge-transfer{background:#F3E8FF;color:#7E22CE;padding:2px 8px;border-radius:6px;font-weight:700;display:inline-block;}
+
 </style>
 </head>
 <body>
@@ -384,6 +396,7 @@
   </div>
   <div style="display:flex;gap:6px;">
     <button class="icon-btn" id="navStockBtn">📦 المخزن</button>
+    <button class="icon-btn" id="navLedgerBtn">📊 حركة صنف</button>
     <button class="icon-btn" id="navListBtn">📋 الفواتير</button>
   </div>
 </div>
@@ -501,6 +514,9 @@
       <button type="button" class="icon-btn" id="zeroAllStockBtn" style="color:var(--danger);border-color:#F5C6CB;background:#FFF5F5;" title="تصفير كميات جميع الأصناف إلى 0">
         🧹 تصفير المخزون
       </button>
+      <button type="button" class="icon-btn" id="openLedgerFromStockBtn" style="color:#0284c7;border-color:#bae6fd;background:#f0f9ff;font-weight:700;" title="عرض كارت حركة الأصناف">
+        📊 كارت حركة الصنف
+      </button>
     </div>
 
     <!-- شريط البحث والفلترة -->
@@ -521,6 +537,69 @@
       <button type="button" class="btn btn-primary" id="saveStockManualBtn" style="width:100%;">
         💾 حفظ تعديلات المخزون
       </button>
+    </div>
+  </section>
+</div>
+
+<!-- ============ SCREEN: ITEM MOVEMENT LEDGER ============ -->
+<div id="screenLedger" class="wrap hidden">
+  <section>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn btn-ghost" id="backFromLedgerBtn" style="padding:6px 12px;font-size:12px;">→ رجوع</button>
+        <h2 class="section-title" style="margin:0;">📊 كارت حركة الصنف</h2>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-ghost" id="exportLedgerExcelBtn" style="font-size:12px;padding:6px 12px;background:#ECFDF5;border-color:#A7F3D0;color:#059669;font-weight:700;">📥 تصدير كارت الصنف إكسيل</button>
+      </div>
+    </div>
+
+    <!-- Product Selector Card -->
+    <div class="card" style="margin-bottom:14px;background:#ffffff;border:1px solid #e2e8f0;padding:14px;">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;">
+        <div class="field" style="margin:0;">
+          <label style="font-weight:700;color:var(--ink);font-size:13px;">اختر الصنف لمتابعة حركته 🔍</label>
+          <select id="ledgerProductSelect" style="width:100%;height:42px;border-radius:8px;border:1.5px solid #cbd5e1;padding:0 12px;font-weight:700;font-size:14px;color:var(--ink);background:#fff;"></select>
+        </div>
+        <div>
+          <button class="btn btn-ghost" id="editOpeningBalanceBtn" style="height:42px;font-size:12px;white-space:nowrap;padding:0 12px;border:1px dashed #94a3b8;font-weight:700;" title="تعديل رصيد بداية المدة يدويًا">⚙️ ضبط رصيد البداية</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary KPI Cards -->
+    <div class="stock-stats" style="margin-bottom:14px;display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;">
+      <div class="stock-stat-card" style="border-right:4px solid #3b82f6;">
+        <div class="stock-stat-label">📦 رصيد بداية المدة</div>
+        <div class="stock-stat-val" id="ledgerOpeningVal">0</div>
+        <div style="font-size:11px;color:var(--ink-soft);font-weight:700;" id="ledgerOpeningDetail">0 دستة</div>
+      </div>
+      <div class="stock-stat-card" style="border-right:4px solid #10b981;">
+        <div class="stock-stat-label">🟢 إجمالي الوارد (+)</div>
+        <div class="stock-stat-val" id="ledgerTotalInVal" style="color:#059669;">0</div>
+        <div style="font-size:11px;color:var(--ink-soft);font-weight:700;" id="ledgerTotalInDetail">مشتريات + مرتجع</div>
+      </div>
+      <div class="stock-stat-card" style="border-right:4px solid #ef4444;">
+        <div class="stock-stat-label">🔴 إجمالي المنصرف (-)</div>
+        <div class="stock-stat-val" id="ledgerTotalOutVal" style="color:#dc2626;">0</div>
+        <div style="font-size:11px;color:var(--ink-soft);font-weight:700;" id="ledgerTotalOutDetail">مبيعات</div>
+      </div>
+      <div class="stock-stat-card" style="border-right:4px solid #8b5cf6;">
+        <div class="stock-stat-label">🏷️ الرصيد الحالي</div>
+        <div class="stock-stat-val" id="ledgerCurrentVal" style="color:#6d28d9;">0</div>
+        <div style="font-size:11px;color:var(--ink-soft);font-weight:700;" id="ledgerCurrentDetail">0 دستة</div>
+      </div>
+    </div>
+
+    <!-- Movement Transactions Table -->
+    <div class="card" style="padding:0;overflow:hidden;border:1px solid #e2e8f0;box-shadow:var(--shadow);">
+      <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:800;color:var(--ink);font-size:14px;">سجل الحركات التفصيلي</span>
+        <span id="ledgerMovementsCount" style="font-size:12px;color:var(--ink-soft);font-weight:700;">0 حركة مسجلة</span>
+      </div>
+      <div id="ledgerTableContainer" style="overflow-x:auto;max-height:480px;overflow-y:auto;">
+        <!-- Dynamic Table inserted here -->
+      </div>
     </div>
   </section>
 </div>
@@ -1365,6 +1444,8 @@ function showScreen(name){
   document.getElementById('screenList').classList.toggle('hidden', name!=='list');
   document.getElementById('screenReceipt').classList.toggle('hidden', name!=='receipt');
   document.getElementById('screenStock').classList.toggle('hidden', name!=='stock');
+  const ledgerEl = document.getElementById('screenLedger');
+  if(ledgerEl) ledgerEl.classList.toggle('hidden', name!=='ledger');
 }
 document.getElementById('navListBtn').addEventListener('click', async ()=>{
   showScreen('list');
@@ -1374,7 +1455,19 @@ document.getElementById('navStockBtn').addEventListener('click', async ()=>{
   showScreen('stock');
   renderStockScreen();
 });
+document.getElementById('navLedgerBtn').addEventListener('click', async ()=>{
+  showScreen('ledger');
+  await renderLedgerScreen();
+});
 document.getElementById('backFromStockBtn').addEventListener('click', ()=> showScreen('new'));
+document.getElementById('backFromLedgerBtn').addEventListener('click', ()=> showScreen('stock'));
+const openLedgerStockBtn = document.getElementById('openLedgerFromStockBtn');
+if(openLedgerStockBtn){
+  openLedgerStockBtn.addEventListener('click', async ()=>{
+    showScreen('ledger');
+    await renderLedgerScreen();
+  });
+}
 document.getElementById('backToNewBtn').addEventListener('click', ()=> showScreen('new'));
 document.getElementById('backFromReceiptBtn').addEventListener('click', async ()=>{
   showScreen('list');
@@ -1640,6 +1733,8 @@ document.getElementById('shareImgBtn').addEventListener('click', async ()=>{
 
 
 /* ================= STOCK & EXCEL MANAGEMENT ENGINE ================= */
+let OPENING_BALANCES = {};
+
 async function loadStockBalances(){
   try{
     const r = await window.storage.get('stock:balances', false);
@@ -1653,12 +1748,31 @@ async function loadStockBalances(){
     STOCK_BALANCES = {};
     PRODUCTS.forEach(p => { STOCK_BALANCES[p.name] = 0; });
   }
+
+  try{
+    const ro = await window.storage.get('stock:opening_balances', false);
+    if(ro && ro.value) {
+      OPENING_BALANCES = JSON.parse(ro.value);
+    } else {
+      OPENING_BALANCES = {};
+    }
+  }catch(e){
+    OPENING_BALANCES = {};
+  }
+
   return STOCK_BALANCES;
 }
 
 async function saveStockBalances(){
   try{
     await window.storage.set('stock:balances', JSON.stringify(STOCK_BALANCES), false);
+    return true;
+  }catch(e){ return false; }
+}
+
+async function saveOpeningBalances(){
+  try{
+    await window.storage.set('stock:opening_balances', JSON.stringify(OPENING_BALANCES), false);
     return true;
   }catch(e){ return false; }
 }
@@ -1768,7 +1882,10 @@ function renderStockScreen(filter, query){
       <tr>
         <td style="color:var(--ink-soft);text-align:center;">${idx+1}</td>
         <td>
-          <div style="font-weight:800;color:var(--ink);">${p.name}</div>
+          <div style="font-weight:800;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px;" class="open-product-ledger" data-name="${p.name}" title="اضغط لعرض كارت حركة الصنف">
+            <span>${p.name}</span>
+            <span style="font-size:10px;background:#e0f2fe;color:#0284c7;padding:1px 5px;border-radius:4px;font-weight:700;">📊 حركة</span>
+          </div>
           <div class="stock-dozen-txt">${fmtDozens(curDozens)}</div>
         </td>
         <td style="text-align:center;">
@@ -1808,6 +1925,13 @@ function renderStockScreen(filter, query){
       const name = e.target.dataset.name;
       const p = PRODUCTS.find(pp => pp.name === name);
       if(p) p.price = Number(e.target.value) || 0;
+    });
+  });
+  wrap.querySelectorAll('.open-product-ledger').forEach(el => {
+    el.addEventListener('click', async () => {
+      const name = el.dataset.name;
+      showScreen('ledger');
+      await renderLedgerScreen(name);
     });
   });
 }
@@ -1985,10 +2109,15 @@ zeroBtn.addEventListener('click', async () => {
     for (let key in STOCK_BALANCES) {
       STOCK_BALANCES[key] = 0;
     }
+    for (let key in OPENING_BALANCES) {
+      OPENING_BALANCES[key] = 0;
+    }
     PRODUCTS.forEach(p => {
       STOCK_BALANCES[p.name] = 0;
+      OPENING_BALANCES[p.name] = 0;
     });
     await saveStockBalances();
+    await saveOpeningBalances();
     renderStockScreen();
     showToast('تم تصفير جميع كميات المخزون بالكامل (0 دستة) بنجاح 🧹');
   } else {
@@ -2071,16 +2200,19 @@ document.getElementById('excelStockInput').addEventListener('change', async (e) 
         let p = PRODUCTS.find(pp => pp.name === rawName || pp.name.replace(/\\s+/g,'') === rawName.replace(/\\s+/g,''));
         if(p){
           STOCK_BALANCES[p.name] = dozens;
+          if(OPENING_BALANCES[p.name] == null) OPENING_BALANCES[p.name] = dozens;
           if(price != null && price > 0) p.price = price;
           updatedCount++;
         } else {
           PRODUCTS.push({id: PRODUCTS.length, name: rawName, price: price || 0});
           STOCK_BALANCES[rawName] = dozens;
+          OPENING_BALANCES[rawName] = dozens;
           newCount++;
         }
       }
 
       await saveStockBalances();
+      await saveOpeningBalances();
       await saveProductsCatalog();
       renderStockScreen();
       showToast(`تم استيراد الجرد: تحديث ${updatedCount} صنف و إضافة ${newCount} صنف جديد ✅`);
@@ -2092,6 +2224,317 @@ document.getElementById('excelStockInput').addEventListener('change', async (e) 
   reader.readAsArrayBuffer(file);
 });
 
+
+/* ================= ITEM MOVEMENT LEDGER ENGINE ================= */
+let currentLedgerProduct = "";
+
+async function renderLedgerScreen(productName){
+  const select = document.getElementById('ledgerProductSelect');
+  if(!select) return;
+
+  const allProductNames = Array.from(new Set(PRODUCTS.map(p => p.name))).filter(Boolean);
+  allProductNames.sort((a,b)=> a.localeCompare(b, 'ar'));
+
+  if(productName && allProductNames.includes(productName)){
+    currentLedgerProduct = productName;
+  } else if(!currentLedgerProduct && allProductNames.length > 0){
+    currentLedgerProduct = allProductNames[0];
+  } else if(currentLedgerProduct && !allProductNames.includes(currentLedgerProduct)){
+    currentLedgerProduct = allProductNames[0] || "";
+  }
+
+  select.innerHTML = allProductNames.map(name => {
+    const isSel = name === currentLedgerProduct ? 'selected' : '';
+    return `<option value="${name}" ${isSel}>${name}</option>`;
+  }).join("");
+
+  if(!currentLedgerProduct){
+    document.getElementById('ledgerTableContainer').innerHTML = `<div style="padding:24px;text-align:center;color:var(--ink-soft);font-weight:700;">لا توجد أصناف مسجلة بالمخزن حالياً</div>`;
+    return;
+  }
+
+  // Fetch all invoices
+  const invoices = await listInvoices();
+  // Chronological order: oldest to newest
+  const sortedInvoices = [...invoices].sort((a, b) => a.createdAt - b.createdAt);
+
+  // Extract movements for currentLedgerProduct
+  const movements = [];
+  let totalInDozens = 0;
+  let totalOutDozens = 0;
+
+  sortedInvoices.forEach(inv => {
+    if(!inv.items || !Array.isArray(inv.items)) return;
+    inv.items.forEach(it => {
+      const itName = it.name ? it.name.trim() : "";
+      if(itName === currentLedgerProduct || itName.replace(/\s+/g,'') === currentLedgerProduct.replace(/\s+/g,'')){
+        const qtyRaw = Number(it.qty) || 0;
+        const isDozen = it.unit === 'dozen';
+        const qtyDozens = isDozen ? qtyRaw : (qtyRaw / 12);
+        
+        let direction = 'out';
+        let typeBadge = '';
+        let typeLabel = '';
+
+        if(inv.type === 'sale'){
+          direction = 'out';
+          totalOutDozens += qtyDozens;
+          typeLabel = 'بيع';
+          typeBadge = '<span class="badge-out">🛒 بيع</span>';
+        } else if(inv.type === 'purchase'){
+          direction = 'in';
+          totalInDozens += qtyDozens;
+          typeLabel = 'شراء';
+          typeBadge = '<span class="badge-in">📥 شراء</span>';
+        } else if(inv.type === 'return'){
+          direction = 'in';
+          totalInDozens += qtyDozens;
+          typeLabel = 'مرتجع';
+          typeBadge = '<span class="badge-in" style="background:#e0f2fe;color:#0369a1;">↩️ مرتجع</span>';
+        } else if(inv.type === 'transfer'){
+          direction = 'out';
+          totalOutDozens += qtyDozens;
+          typeLabel = 'تحويل مخزني';
+          typeBadge = '<span class="badge-transfer">🔄 تحويل</span>';
+        } else {
+          direction = 'out';
+          typeLabel = inv.type || 'حركة';
+          typeBadge = `<span>${typeLabel}</span>`;
+        }
+
+        const dateStr = inv.date || (inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('ar-EG') : '');
+        const timeStr = inv.createdAt ? new Date(inv.createdAt).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : '';
+
+        movements.push({
+          invoiceId: inv.id,
+          invoiceNumber: inv.number || '---',
+          dateStr: `${dateStr} ${timeStr}`.trim(),
+          typeLabel,
+          typeBadge,
+          direction,
+          party: inv.party || (inv.fromStore ? `${inv.fromStore} ⬅️ ${inv.toStore}` : (inv.shopName || 'الصياد')),
+          deviceName: inv.deviceName || '',
+          qtyRaw,
+          unit: it.unit,
+          qtyDozens: Math.round(qtyDozens * 100) / 100,
+          price: it.price || 0,
+          total: it.total || 0
+        });
+      }
+    });
+  });
+
+  // Determine Opening Balance
+  const curStockDozens = getProductStock(currentLedgerProduct);
+  let openingDozens = 0;
+  if(OPENING_BALANCES[currentLedgerProduct] != null){
+    openingDozens = Number(OPENING_BALANCES[currentLedgerProduct]) || 0;
+  } else {
+    // If not explicitly set, calculate: opening = current - (in - out)
+    openingDozens = Math.round((curStockDozens - totalInDozens + totalOutDozens) * 100) / 100;
+    OPENING_BALANCES[currentLedgerProduct] = openingDozens;
+  }
+
+  // Update KPI Cards
+  document.getElementById('ledgerOpeningVal').textContent = Math.round(openingDozens * 10) / 10;
+  document.getElementById('ledgerOpeningDetail').textContent = fmtDozens(openingDozens);
+
+  document.getElementById('ledgerTotalInVal').textContent = Math.round(totalInDozens * 10) / 10;
+  document.getElementById('ledgerTotalInDetail').textContent = fmtDozens(totalInDozens);
+
+  document.getElementById('ledgerTotalOutVal').textContent = Math.round(totalOutDozens * 10) / 10;
+  document.getElementById('ledgerTotalOutDetail').textContent = fmtDozens(totalOutDozens);
+
+  document.getElementById('ledgerCurrentVal').textContent = Math.round(curStockDozens * 10) / 10;
+  document.getElementById('ledgerCurrentDetail').textContent = fmtDozens(curStockDozens);
+
+  document.getElementById('ledgerMovementsCount').textContent = `${movements.length} حركة مسجلة`;
+
+  // Build Movements Table with Running Balance
+  let runningBalance = openingDozens;
+  let rowsHtml = '';
+
+  // Row 0: Opening Balance Row
+  rowsHtml += `
+    <tr style="background:#f8fafc;font-weight:700;">
+      <td style="text-align:center;color:var(--ink-soft);">-</td>
+      <td style="color:var(--ink-soft);font-size:11px;">بداية التتبع</td>
+      <td><span style="background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:6px;font-size:11px;">📦 رصيد البداية</span></td>
+      <td>رصيد أول المدة / جرد افتتاحي</td>
+      <td style="text-align:center;color:var(--ink-soft);">-</td>
+      <td style="text-align:center;color:var(--ink-soft);">-</td>
+      <td style="text-align:center;color:var(--ink-soft);">-</td>
+      <td style="text-align:center;font-weight:800;color:var(--ink);">${fmtDozens(openingDozens)}</td>
+    </tr>
+  `;
+
+  movements.forEach((m, idx) => {
+    if(m.direction === 'in'){
+      runningBalance += m.qtyDozens;
+    } else {
+      runningBalance -= m.qtyDozens;
+    }
+    runningBalance = Math.round(runningBalance * 100) / 100;
+
+    const inQtyTxt = m.direction === 'in' ? `<span style="color:#15803D;font-weight:800;">+ ${m.qtyRaw} ${m.unit==='dozen'?'د':'ق'}</span><div style="font-size:10px;color:#16a34a;">(${fmtDozens(m.qtyDozens)})</div>` : '<span style="color:#cbd5e1;">-</span>';
+    const outQtyTxt = m.direction === 'out' ? `<span style="color:#B91C1C;font-weight:800;">- ${m.qtyRaw} ${m.unit==='dozen'?'د':'ق'}</span><div style="font-size:10px;color:#dc2626;">(${fmtDozens(m.qtyDozens)})</div>` : '<span style="color:#cbd5e1;">-</span>';
+
+    const repBadge = m.deviceName ? `<span style="font-size:10px;background:#f1f5f9;color:#475569;padding:1px 5px;border-radius:4px;margin-right:4px;">${m.deviceName}</span>` : '';
+
+    rowsHtml += `
+      <tr>
+        <td style="text-align:center;color:var(--ink-soft);font-size:11px;">${idx+1}</td>
+        <td style="white-space:nowrap;font-size:11px;color:var(--ink-soft);">${m.dateStr}</td>
+        <td>
+          <a href="javascript:void(0)" class="ledger-inv-link" data-id="${m.invoiceId}" style="color:var(--brand);font-weight:800;text-decoration:none;">
+            ${m.invoiceNumber}
+          </a>
+          <div>${m.typeBadge}</div>
+        </td>
+        <td>
+          <div style="font-weight:700;color:var(--ink);">${m.party}</div>
+          <div>${repBadge}</div>
+        </td>
+        <td style="text-align:center;font-size:11px;color:var(--ink-soft);">${m.price} ج</td>
+        <td style="text-align:center;">${inQtyTxt}</td>
+        <td style="text-align:center;">${outQtyTxt}</td>
+        <td style="text-align:center;font-weight:800;color:var(--ink);">${fmtDozens(runningBalance)}</td>
+      </tr>
+    `;
+  });
+
+  const tableHtml = `
+    <table class="ledger-table">
+      <thead>
+        <tr>
+          <th style="width:30px;text-align:center;">#</th>
+          <th style="width:110px;">التاريخ</th>
+          <th style="width:100px;">الفاتورة / النوع</th>
+          <th>البيان / الطرف</th>
+          <th style="width:65px;text-align:center;">السعر</th>
+          <th style="width:85px;text-align:center;">وارد (+)</th>
+          <th style="width:85px;text-align:center;">منصرف (-)</th>
+          <th style="width:105px;text-align:center;">الرصيد بعد الحركة</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  `;
+
+  document.getElementById('ledgerTableContainer').innerHTML = tableHtml;
+
+  // Bind clicking on invoice link to open receipt
+  document.querySelectorAll('.ledger-inv-link').forEach(link => {
+    link.addEventListener('click', async () => {
+      const invId = link.dataset.id;
+      const rec = await window.storage.get('invoice:'+invId, false);
+      if(rec && rec.value){
+        openReceipt(JSON.parse(rec.value));
+      }
+    });
+  });
+}
+
+// Listeners for ledger controls
+document.getElementById('ledgerProductSelect').addEventListener('change', async (e) => {
+  currentLedgerProduct = e.target.value;
+  await renderLedgerScreen(currentLedgerProduct);
+});
+
+document.getElementById('editOpeningBalanceBtn').addEventListener('click', async () => {
+  if(!currentLedgerProduct) return;
+  const curOpening = OPENING_BALANCES[currentLedgerProduct] != null ? OPENING_BALANCES[currentLedgerProduct] : 0;
+  const input = prompt(`أدخل رصيد بداية المدة لصنف «${currentLedgerProduct}» بالدستة:`, curOpening);
+  if(input !== null && !isNaN(Number(input))){
+    const val = Number(input);
+    OPENING_BALANCES[currentLedgerProduct] = val;
+    await saveOpeningBalances();
+    await renderLedgerScreen(currentLedgerProduct);
+    showToast(`تم تحديث رصيد بداية المدة للصنف إلى ${val} دستة ✅`);
+  }
+});
+
+// Excel export for Item Movement Ledger
+document.getElementById('exportLedgerExcelBtn').addEventListener('click', async () => {
+  if(typeof XLSX === 'undefined'){
+    showToast('مكتبة الإكسيل غير جاهزة');
+    return;
+  }
+  if(!currentLedgerProduct){
+    showToast('اختر صنفاً أولاً');
+    return;
+  }
+  const invoices = await listInvoices();
+  const sortedInvoices = [...invoices].sort((a, b) => a.createdAt - b.createdAt);
+  
+  const curStockDozens = getProductStock(currentLedgerProduct);
+  let openingDozens = OPENING_BALANCES[currentLedgerProduct] != null ? Number(OPENING_BALANCES[currentLedgerProduct]) : 0;
+
+  const data = [
+    [`كارت حركة الصنف: ${currentLedgerProduct}`],
+    [`تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}`, `رصيد البداية: ${fmtDozens(openingDozens)}`, `الرصيد الحالي: ${fmtDozens(curStockDozens)}`],
+    [],
+    ["م", "التاريخ والوقت", "رقم الفاتورة", "نوع الحركة", "الطرف / البيان", "المندوب", "السعر", "وارد (+)", "منصرف (-)", "الرصيد بعد الحركة"]
+  ];
+
+  data.push(["-", "بداية المدة", "-", "رصيد بداية", "جرد افتتاحي", "-", "-", "-", "-", fmtDozens(openingDozens)]);
+
+  let running = openingDozens;
+  let idx = 1;
+  let totalIn = 0;
+  let totalOut = 0;
+
+  sortedInvoices.forEach(inv => {
+    if(!inv.items || !Array.isArray(inv.items)) return;
+    inv.items.forEach(it => {
+      const itName = it.name ? it.name.trim() : "";
+      if(itName === currentLedgerProduct || itName.replace(/\s+/g,'') === currentLedgerProduct.replace(/\s+/g,'')){
+        const qtyRaw = Number(it.qty) || 0;
+        const qtyDozens = it.unit === 'dozen' ? qtyRaw : (qtyRaw / 12);
+        let dir = 'out';
+        let typeLbl = 'بيع';
+        if(inv.type === 'purchase'){ dir = 'in'; typeLbl = 'شراء'; totalIn += qtyDozens; }
+        else if(inv.type === 'return'){ dir = 'in'; typeLbl = 'مرتجع'; totalIn += qtyDozens; }
+        else if(inv.type === 'transfer'){ dir = 'out'; typeLbl = 'تحويل مخزني'; totalOut += qtyDozens; }
+        else { dir = 'out'; typeLbl = 'بيع'; totalOut += qtyDozens; }
+
+        if(dir === 'in') running += qtyDozens;
+        else running -= qtyDozens;
+        running = Math.round(running * 100) / 100;
+
+        const dateStr = inv.date || (inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('ar-EG') : '');
+        const timeStr = inv.createdAt ? new Date(inv.createdAt).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : '';
+
+        data.push([
+          idx++,
+          `${dateStr} ${timeStr}`.trim(),
+          inv.number || '',
+          typeLbl,
+          inv.party || (inv.fromStore ? `${inv.fromStore} ⬅️ ${inv.toStore}` : ''),
+          inv.deviceName || '',
+          it.price || 0,
+          dir === 'in' ? `${qtyRaw} ${it.unit==='dozen'?'دستة':'قطعة'}` : '',
+          dir === 'out' ? `${qtyRaw} ${it.unit==='dozen'?'دستة':'قطعة'}` : '',
+          fmtDozens(running)
+        ]);
+      }
+    });
+  });
+
+  data.push([]);
+  data.push(["", "الإجمالي", "", "", "", "", "", fmtDozens(totalIn), fmtDozens(totalOut), fmtDozens(curStockDozens)]);
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 18 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "كارت الصنف");
+  const dateStr = new Date().toISOString().slice(0,10);
+  const cleanProd = currentLedgerProduct.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+  const arabicFileName = `حركة_صنف_${cleanProd}_${dateStr}.xlsx`;
+  const asciiFileName = `item_ledger_${dateStr}.xlsx`;
+  await downloadWorkbookAsXlsx(wb, arabicFileName, asciiFileName);
+  showToast('تم تصدير كارت الصنف بنجاح ✅');
+});
 
 /* ================= INIT ================= */
 document.getElementById('shopNameInput').addEventListener('blur', e=> saveShopName(e.target.value));
