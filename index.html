@@ -556,14 +556,9 @@
 
     <!-- Product Selector Card -->
     <div class="card" style="margin-bottom:14px;background:#ffffff;border:1px solid #e2e8f0;padding:14px;">
-      <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;">
-        <div class="field" style="margin:0;">
-          <label style="font-weight:700;color:var(--ink);font-size:13px;">اختر الصنف لمتابعة حركته 🔍</label>
-          <select id="ledgerProductSelect" style="width:100%;height:42px;border-radius:8px;border:1.5px solid #cbd5e1;padding:0 12px;font-weight:700;font-size:14px;color:var(--ink);background:#fff;"></select>
-        </div>
-        <div>
-          <button class="btn btn-ghost" id="editOpeningBalanceBtn" style="height:42px;font-size:12px;white-space:nowrap;padding:0 12px;border:1px dashed #94a3b8;font-weight:700;" title="تعديل رصيد بداية المدة يدويًا">⚙️ ضبط رصيد البداية</button>
-        </div>
+      <div class="field" style="margin:0;">
+        <label style="font-weight:700;color:var(--ink);font-size:13px;">اختر الصنف لمتابعة حركته 🔍</label>
+        <select id="ledgerProductSelect" style="width:100%;height:42px;border-radius:8px;border:1.5px solid #cbd5e1;padding:0 12px;font-weight:700;font-size:14px;color:var(--ink);background:#fff;"></select>
       </div>
     </div>
 
@@ -2359,7 +2354,7 @@ async function renderLedgerScreen(productName){
     <tr style="background:#f8fafc;font-weight:700;">
       <td style="text-align:center;color:var(--ink-soft);">-</td>
       <td style="color:var(--ink-soft);font-size:11px;">بداية التتبع</td>
-      <td><span style="background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:6px;font-size:11px;">📦 رصيد البداية</span></td>
+      <td><span style="background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:6px;font-size:11px;">📦 رصيد أول المدة</span></td>
       <td>رصيد أول المدة / جرد افتتاحي</td>
       <td style="text-align:center;color:var(--ink-soft);">-</td>
       <td style="text-align:center;color:var(--ink-soft);">-</td>
@@ -2441,18 +2436,6 @@ document.getElementById('ledgerProductSelect').addEventListener('change', async 
   await renderLedgerScreen(currentLedgerProduct);
 });
 
-document.getElementById('editOpeningBalanceBtn').addEventListener('click', async () => {
-  if(!currentLedgerProduct) return;
-  const curOpening = OPENING_BALANCES[currentLedgerProduct] != null ? OPENING_BALANCES[currentLedgerProduct] : 0;
-  const input = prompt(`أدخل رصيد بداية المدة لصنف «${currentLedgerProduct}» بالدستة:`, curOpening);
-  if(input !== null && !isNaN(Number(input))){
-    const val = Number(input);
-    OPENING_BALANCES[currentLedgerProduct] = val;
-    await saveOpeningBalances();
-    await renderLedgerScreen(currentLedgerProduct);
-    showToast(`تم تحديث رصيد بداية المدة للصنف إلى ${val} دستة ✅`);
-  }
-});
 
 // Excel export for Item Movement Ledger
 document.getElementById('exportLedgerExcelBtn').addEventListener('click', async () => {
