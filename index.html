@@ -528,10 +528,11 @@
 <!-- ============ SCREEN: INVOICE LIST ============ -->
 <div id="screenList" class="wrap hidden">
   <section>
-    <div style="display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <h2 class="section-title" style="margin:0;">الفواتير المحفوظة</h2>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="icon-btn" id="exportAllBtn">📥 تصدير الكل</button>
+        <button type="button" class="icon-btn" id="clearAllInvoicesBtn" style="color:var(--danger);border-color:#F5C6CB;background:#FFF5F5;" title="حذف وتصفير جميع الفواتير وعكس حركات المخزون">🗑️ تصفير الفواتير</button>
         <button class="icon-btn" id="backToNewBtn">فاتورة جديدة +</button>
       </div>
     </div>
@@ -756,14 +757,25 @@
 
 <!-- ============ SCREEN: RECEIPT / SHARE ============ -->
 <div id="screenReceipt" class="wrap hidden">
-  <section style="display:flex;gap:10px;">
-    <button class="icon-btn" id="backFromReceiptBtn">→ رجوع</button>
-  </section>
+  <div style="background:#ECFDF5;border:1.5px solid #10B981;color:#065F46;padding:12px 16px;border-radius:12px;margin:12px 0 14px;text-align:center;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;">
+    <span>✅ تم حفظ الفاتورة بنجاح! هل تريد مشاركتها كصورة؟</span>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <button class="btn btn-ghost" id="newInvoiceFromReceiptBtn" style="font-weight:700;">➕ فاتورة جديدة</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="icon-btn" id="backFromReceiptBtn">📋 سجل الفواتير</button>
+      <button class="btn btn-primary" id="shareImgBtnTop" style="font-weight:800;">📤 مشاركة كصورة</button>
+    </div>
+  </div>
+
   <div class="receipt-outer">
     <div id="receipt"></div>
   </div>
-  <div class="action-row">
-    <button class="btn btn-ghost" id="deleteInvoiceBtn">حذف</button>
+
+  <div class="action-row" style="margin-top:16px;">
+    <button class="btn btn-ghost" id="newInvoiceFromReceiptBtnBottom">➕ فاتورة جديدة</button>
+    <button class="btn btn-ghost" id="deleteInvoiceBtn" style="color:var(--danger);border-color:#F5C6CB;">🗑️ حذف</button>
     <button class="btn btn-primary" id="shareImgBtn">📤 مشاركة كصورة</button>
   </div>
 </div>
@@ -1337,13 +1349,13 @@ function renderPartyCard(){
     card.innerHTML = `
       <div class="two-col">
         <div class="field area-field">
-          <label>${t.partyLabel} *</label>
-          <input id="partyInput" autocomplete="off" value="${state.party||""}" placeholder="مطلوب" required>
+          <label>${t.partyLabel} (اختياري)</label>
+          <input id="partyInput" autocomplete="off" value="${state.party||""}" placeholder="اختر أو اكتب الاسم">
           <div class="area-dropdown" id="partyDropdown">${partyOptionsHtml}</div>
         </div>
         <div class="field area-field">
-          <label>المنطقة *</label>
-          <input id="areaInput" autocomplete="off" value="${state.area||""}" placeholder="اختر أو اكتب المنطقة" required>
+          <label>المنطقة (اختياري)</label>
+          <input id="areaInput" autocomplete="off" value="${state.area||""}" placeholder="اختر أو اكتب المنطقة">
           <div class="area-dropdown" id="areaDropdown">${areaOptionsHtml}</div>
         </div>
       </div>
@@ -1383,7 +1395,10 @@ function renderPartyCard(){
     }
     setupAutocomplete(document.getElementById('partyInput'), document.getElementById('partyDropdown'), v=>{ state.party = v; updateSaveEnabled(); saveDraft(); });
     setupAutocomplete(document.getElementById('areaInput'), document.getElementById('areaDropdown'), v=>{ state.area = v; updateSaveEnabled(); saveDraft(); });
-    document.getElementById('deviceNameInput').addEventListener('input', e=>{ state.deviceName = e.target.value; saveDeviceName(e.target.value); saveDraft(); });
+    const devInp = document.getElementById('deviceNameInput');
+    if(devInp){
+      devInp.addEventListener('input', e=>{ state.deviceName = e.target.value; saveDeviceName(e.target.value); saveDraft(); });
+    }
     document.getElementById('noteInput').addEventListener('input', e=>{ state.note = e.target.value; saveDraft(); });
   }
 }
@@ -1608,26 +1623,20 @@ function updateSaveEnabled(){
   const banner = document.getElementById('matchBanner');
   let matched = Math.abs(diff) < 0.01 && total > 0;
 
-  const hasParty = !!(state.party && state.party.trim());
-  const hasArea = !!(state.area && state.area.trim());
-
-  if(!hasParty || !hasArea){
-    banner.className = 'match-banner bad';
-    banner.textContent = 'لازم تدخل اسم العميل والمنطقة';
-  } else if(total <= 0){
+  if(total <= 0){
     banner.className = 'match-banner bad';
     banner.textContent = 'أضف أصناف الفاتورة أولاً';
-  } else if(diff > 0){
+  } else if(!matched && diff > 0){
     banner.className = 'match-banner bad';
     banner.textContent = `متبقي ${fmt(diff)} لسه محطوطش في طريقة دفع`;
-  } else if(diff < 0){
+  } else if(!matched && diff < 0){
     banner.className = 'match-banner bad';
     banner.textContent = `في زيادة ${fmt(Math.abs(diff))} عن إجمالي الفاتورة`;
   } else {
     banner.className = 'match-banner ok';
     banner.textContent = 'مطابق ✓ إجمالي طرق الدفع = إجمالي الفاتورة';
   }
-  document.getElementById('saveBtn').disabled = !(matched && hasItems && hasParty && hasArea);
+  document.getElementById('saveBtn').disabled = !(matched && hasItems);
   refreshQuickPayHighlight();
   saveDraft();
 }
@@ -1697,11 +1706,13 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
     fromStore: state.fromStore,
     toStore: state.toStore,
     note: state.note,
-    items: state.items.map(it=>{
-      const p = PRODUCTS.find(pp=>pp.id===it.productId);
-      const name = p ? p.name : (it.customName && it.customName.trim()!=='' ? it.customName.trim() : "صنف");
-      return {name, unit: it.unit, qty: it.qty, price: it.price, total: lineTotal(it)};
-    }),
+    items: state.items
+      .filter(it=> (it.productId!=null || (it.customName && it.customName.trim()!=='')) && it.qty > 0)
+      .map(it=>{
+        const p = PRODUCTS.find(pp=>pp.id===it.productId);
+        const name = p ? p.name : (it.customName && it.customName.trim()!=='' ? it.customName.trim() : "صنف");
+        return {name, unit: it.unit, qty: it.qty, price: it.price, total: lineTotal(it)};
+      }),
     total: grandTotal(),
     pay: {...state.pay},
     date: new Date().toLocaleDateString('ar-EG'),
@@ -1709,17 +1720,19 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
   };
   const ok = await saveInvoiceToStorage(invoice);
   if(ok){
-    await adjustStockForInvoice(invoice, false);
+    try { await adjustStockForInvoice(invoice, false); } catch(e){ console.error(e); }
   }
-  showToast(ok ? 'تم الحفظ وتحديث المخزن وجاري الترحيل...' : 'الفاتورة اتحفظت مؤقت بس حصلت مشكلة في التخزين');
-  resetForm();
+  showToast(ok ? 'تم حفظ الفاتورة بنجاح ✅' : 'الفاتورة اتحفظت مؤقت بس حصلت مشكلة في التخزين');
+
+  // عرض الفاتورة فوراً للمستخدم
   openReceipt(invoice);
+  resetForm();
 
   // الترحيل في الخلفية عشان ميعطلش الواجهة
   syncInvoiceToSheet(invoice).then(sync => {
-    if(sync.ok) showToast('الفاتورة ترحّلت للإكسل ✅');
+    if(sync && sync.ok) showToast('الفاتورة ترحّلت للإكسل ✅');
     else showToast('الفاتورة هتترحّل للإكسل أول ما النت يرجع');
-  });
+  }).catch(()=>{});
 });
 
 function showToast(msg){
@@ -1740,6 +1753,7 @@ function showScreen(name){
   if(ledgerEl) ledgerEl.classList.toggle('hidden', name!=='ledger');
   const paymentsEl = document.getElementById('screenPayments');
   if(paymentsEl) paymentsEl.classList.toggle('hidden', name!=='payments');
+  window.scrollTo({top: 0, behavior: 'instant'});
 }
 document.getElementById('navListBtn').addEventListener('click', async ()=>{
   showScreen('list');
@@ -1778,6 +1792,15 @@ document.getElementById('backFromReceiptBtn').addEventListener('click', async ()
   showScreen('list');
   await renderInvoiceList();
 });
+const bindNewInvBtn = (btnId) => {
+  const b = document.getElementById(btnId);
+  if(b) b.addEventListener('click', ()=>{
+    resetForm();
+    showScreen('new');
+  });
+};
+bindNewInvBtn('newInvoiceFromReceiptBtn');
+bindNewInvBtn('newInvoiceFromReceiptBtnBottom');
 
 async function renderInvoiceList(){
   const wrap = document.getElementById('invoiceListWrap');
@@ -1969,26 +1992,28 @@ delInvBtn.addEventListener('click', async ()=>{
   }
 });
 
-document.getElementById('shareImgBtn').addEventListener('click', async ()=>{
+async function shareInvoiceAsImage(btnEl){
   const target = document.getElementById('receipt');
-  const btn = document.getElementById('shareImgBtn');
-  btn.disabled = true;
-  const originalText = btn.textContent;
-  btn.textContent = "جارِ التجهيز...";
+  if(!target) return;
+  const originalText = btnEl ? btnEl.textContent : "📤 مشاركة كصورة";
+  if(btnEl){
+    btnEl.disabled = true;
+    btnEl.textContent = "جارِ التجهيز...";
+  }
   try{
     const canvas = await html2canvas(target, {backgroundColor:'#ffffff', scale:2});
     canvas.toBlob(async (blob)=>{
       if(!blob){
         showToast('حصلت مشكلة في تجهيز الصورة');
-        btn.disabled = false; btn.textContent = originalText;
+        if(btnEl){ btnEl.disabled = false; btnEl.textContent = originalText; }
         return;
       }
       const safeName = `invoice-${Date.now()}.png`;
       const file = new File([blob], safeName, {type:'image/png'});
       if(navigator.canShare && navigator.canShare({files:[file]})){
         try{
-          await navigator.share({files:[file], title:'فاتورة'});
-          btn.disabled = false; btn.textContent = originalText;
+          await navigator.share({files:[file], title:'فاتورة الصياد'});
+          if(btnEl){ btnEl.disabled = false; btnEl.textContent = originalText; }
           return;
         }catch(e){ /* user cancelled share */ }
       }
@@ -2006,11 +2031,11 @@ document.getElementById('shareImgBtn').addEventListener('click', async ()=>{
           await writable.write(blob);
           await writable.close();
           showToast('اتحملت صورة الفاتورة بنجاح 🖼️');
-          btn.disabled = false; btn.textContent = originalText;
+          if(btnEl){ btnEl.disabled = false; btnEl.textContent = originalText; }
           return;
         } catch(err) {
           if (err.name === 'AbortError') {
-            btn.disabled = false; btn.textContent = originalText;
+            if(btnEl){ btnEl.disabled = false; btnEl.textContent = originalText; }
             return;
           }
         }
@@ -2027,14 +2052,18 @@ document.getElementById('shareImgBtn').addEventListener('click', async ()=>{
         URL.revokeObjectURL(url);
       }, 60000);
       showToast('اتحملت صورة الفاتورة بنجاح ✅');
-      btn.disabled = false; btn.textContent = originalText;
+      if(btnEl){ btnEl.disabled = false; btnEl.textContent = originalText; }
     }, 'image/png');
   }catch(e){
     console.error(e);
     showToast('حصلت مشكلة في تجهيز الصورة');
-    btn.disabled = false; btn.textContent = originalText;
+    if(btnEl){ btnEl.disabled = false; btnEl.textContent = originalText; }
   }
-});
+}
+
+document.getElementById('shareImgBtn').addEventListener('click', function(){ shareInvoiceAsImage(this); });
+const shareTopBtn = document.getElementById('shareImgBtnTop');
+if(shareTopBtn) shareTopBtn.addEventListener('click', function(){ shareInvoiceAsImage(this); });
 
 
 /* ================= STOCK & EXCEL MANAGEMENT ENGINE ================= */
