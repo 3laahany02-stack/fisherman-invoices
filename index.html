@@ -412,12 +412,12 @@
   .stock-input-price:focus{border-color:var(--brand);outline:none;}
   .stock-dozen-txt{font-size:11px;color:var(--ink-soft);margin-top:2px;}
   .stock-badge{
-    font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
-    display:inline-flex;align-items:center;gap:4px;
+    font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;
+    display:inline-flex;align-items:center;gap:6px;line-height:1.4;
   }
-  .stock-badge.ok{background:#E6F4EA;color:#137333;}
-  .stock-badge.warning{background:#FEF7E0;color:#B06000;}
-  .stock-badge.danger{background:#FCE8E6;color:#C5221F;}
+  .stock-badge.ok{background:#E6F4EA;color:#137333;border:1px solid #CEEAD6;}
+  .stock-badge.warning{background:#FEF7E0;color:#B06000;border:1px solid #FEEFC3;}
+  .stock-badge.danger{background:#FCE8E6;color:#C5221F;border:1px solid #FAD2CF;}
 
   /* ================= ITEM MOVEMENT LEDGER ============ */
   .ledger-table{width:100%;border-collapse:collapse;font-size:12px;}
@@ -441,6 +441,7 @@
   .payments-table tr:hover td{background:#F8FAFC;}
   .pay-badge-cash{background:#DCFCE7;color:#15803D;padding:3px 8px;border-radius:6px;font-weight:700;font-size:12px;display:inline-block;}
   .pay-badge-vodafone{background:#FEE2E2;color:#B91C1C;padding:3px 8px;border-radius:6px;font-weight:700;font-size:12px;display:inline-block;}
+  .pay-badge-post{background:#FEF3C7;color:#B45309;padding:3px 8px;border-radius:6px;font-weight:700;font-size:12px;display:inline-block;}
 </style>
 </head>
 <body>
@@ -702,13 +703,35 @@
       <!-- Payment Method Toggle -->
       <div class="field" style="margin-bottom:12px;">
         <label style="font-weight:700;">طريقة السداد *</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <button type="button" class="pay-method-toggle" id="payMethodCashBtn" data-method="cash" style="padding:12px;border-radius:10px;border:2px solid var(--brand);background:var(--brand);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));gap:10px;">
+          <button type="button" class="pay-method-toggle" id="payMethodCashBtn" data-method="cash" style="padding:12px 8px;border-radius:10px;border:2px solid var(--brand);background:var(--brand);color:#fff;font-weight:800;font-size:14px;cursor:pointer;white-space:nowrap;text-align:center;">
             💵 نقدي (Cash)
           </button>
-          <button type="button" class="pay-method-toggle" id="payMethodVodafoneBtn" data-method="vodafone" style="padding:12px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink);font-weight:800;font-size:14px;cursor:pointer;">
+          <button type="button" class="pay-method-toggle" id="payMethodVodafoneBtn" data-method="vodafone" style="padding:12px 8px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink);font-weight:800;font-size:14px;cursor:pointer;white-space:nowrap;text-align:center;">
             📱 فودافون كاش
           </button>
+          <button type="button" class="pay-method-toggle" id="payMethodPostBtn" data-method="post" style="padding:12px 8px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink);font-weight:800;font-size:14px;cursor:pointer;white-space:nowrap;text-align:center;">
+            📮 بريد
+          </button>
+        </div>
+      </div>
+
+      <!-- Vodafone Cash Receipt / Screenshot Attachment -->
+      <div class="field" id="payReceiptSection" style="margin-bottom:14px;display:none;background:#FEF2F2;border:1.5px dashed #FCA5A5;padding:12px;border-radius:10px;">
+        <label style="font-weight:700;color:#991B1B;display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span>📱 إشعار / سكرين شوت التحويل (فودافون كاش)</span>
+        </label>
+        <input type="file" id="payReceiptFileInput" accept="image/*" capture="environment" style="display:none;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-ghost" id="payReceiptSelectBtn" style="padding:8px 14px;font-size:13px;font-weight:700;background:#fff;border-color:#FCA5A5;color:#B91C1C;cursor:pointer;">
+            📷 التقاط أو اختيار صورة الوصل
+          </button>
+          <span id="payReceiptStatus" style="font-size:12px;color:#991B1B;font-weight:600;">لم يتم إرفاق إشعار</span>
+        </div>
+        <!-- Preview Box -->
+        <div id="payReceiptPreviewBox" style="margin-top:10px;display:none;position:relative;width:fit-content;">
+          <img id="payReceiptPreviewImg" src="" alt="إشعار التحويل" style="max-width:140px;max-height:140px;border-radius:8px;border:2px solid #FCA5A5;object-fit:cover;display:block;cursor:pointer;" title="انقر لتكبير الصورة">
+          <button type="button" id="payReceiptRemoveBtn" style="position:absolute;top:-8px;right:-8px;background:#DC2626;color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.3);" title="حذف الصورة">×</button>
         </div>
       </div>
 
@@ -739,6 +762,11 @@
         <div class="stock-stat-label">📱 محصل فودافون كاش</div>
         <div class="stock-stat-val" id="paymentsVodafoneVal" style="color:#dc2626;">0</div>
         <div style="font-size:11px;color:var(--ink-soft);font-weight:700;">محفظة إلكترونية</div>
+      </div>
+      <div class="stock-stat-card" style="border-right:4px solid #d97706;">
+        <div class="stock-stat-label">📮 محصل بريد</div>
+        <div class="stock-stat-val" id="paymentsPostVal" style="color:#d97706;">0</div>
+        <div style="font-size:11px;color:var(--ink-soft);font-weight:700;">حوالة / بريد</div>
       </div>
     </div>
 
@@ -1296,7 +1324,16 @@ function fmt(n){
   return n.toLocaleString('ar-EG');
 }
 function typeMeta(key){ return TYPES.find(t=>t.key===key); }
-function lineTotal(item){ return (item.qty||0) * (item.price||0); }
+function lineTotal(item){
+  const qty = Number(item.qty) || 0;
+  if(item.unit === 'piece'){
+    const dPrice = (item.dozenPrice != null && item.dozenPrice > 0)
+      ? item.dozenPrice
+      : ((Number(item.price) || 0) * 12);
+    return Math.round(((qty * dPrice / 12) + Number.EPSILON) * 100) / 100;
+  }
+  return Math.round(((qty * (Number(item.price) || 0)) + Number.EPSILON) * 100) / 100;
+}
 function grandTotal(){ return state.items.reduce((s,it)=> s + lineTotal(it), 0); }
 function paySum(){ return (Number(state.pay.vodafone)||0) + (Number(state.pay.instapay)||0) + (Number(state.pay.cash)||0) + (Number(state.pay.credit)||0); }
 
@@ -1349,13 +1386,13 @@ function renderPartyCard(){
     card.innerHTML = `
       <div class="two-col">
         <div class="field area-field">
-          <label>${t.partyLabel} (اختياري)</label>
-          <input id="partyInput" autocomplete="off" value="${state.party||""}" placeholder="اختر أو اكتب الاسم">
+          <label style="font-weight:700;">${t.partyLabel} <span style="color:#DC2626;">*</span></label>
+          <input id="partyInput" autocomplete="off" value="${state.party||""}" placeholder="اختر أو اكتب الاسم (إجباري)">
           <div class="area-dropdown" id="partyDropdown">${partyOptionsHtml}</div>
         </div>
         <div class="field area-field">
-          <label>المنطقة (اختياري)</label>
-          <input id="areaInput" autocomplete="off" value="${state.area||""}" placeholder="اختر أو اكتب المنطقة">
+          <label style="font-weight:700;">المنطقة <span style="color:#DC2626;">*</span></label>
+          <input id="areaInput" autocomplete="off" value="${state.area||""}" placeholder="اختر أو اكتب المنطقة (إجباري)">
           <div class="area-dropdown" id="areaDropdown">${areaOptionsHtml}</div>
         </div>
       </div>
@@ -1405,7 +1442,7 @@ function renderPartyCard(){
 
 /* ================= RENDER: ITEMS ================= */
 function addItemRow(){
-  state.items.push({rowId: rowSeq++, productId:null, customName:'', unit:'dozen', qty:1, price:0});
+  state.items.push({rowId: rowSeq++, productId:null, customName:'', unit:'dozen', qty:1, price:0, dozenPrice:0});
   renderItems();
   updateTotals();
 }
@@ -1488,9 +1525,9 @@ function renderItems(){
     row.innerHTML = `
       <button class="remove-btn" data-row="${item.rowId}">×</button>
       <div class="field product-select">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <label style="margin:0;">الصنف</label>
-          ${stockBadgeHtml}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px;padding-left:36px;">
+          <label style="margin:0;font-weight:700;">الصنف</label>
+          <div style="flex-shrink:0;">${stockBadgeHtml}</div>
         </div>
         <div class="search-wrap">
           <input type="text" class="prod-search" data-row="${item.rowId}"
@@ -1523,7 +1560,10 @@ function bindItemEvents(){
           const product = PRODUCTS.find(p=>p.id===Number(o.dataset.pid));
           item.productId = product.id;
           item.customName = product.name;
-          item.price = unitPrice(product, item.unit); // السعر بيتحسب أوتوماتيك حسب الوحدة (دستة أو قطعة مقسوم ع 12)
+          item.dozenPrice = Number(product.price) || 0;
+          item.price = item.unit === 'piece'
+            ? Math.round(((item.dozenPrice / 12) + Number.EPSILON) * 100) / 100
+            : item.dozenPrice;
           renderItems();
           updateTotals();
         };
@@ -1556,16 +1596,17 @@ function bindItemEvents(){
       if(oldUnit === newUnit) return;
       item.unit = newUnit;
 
-      const product = item.productId!=null ? PRODUCTS.find(p=>p.id===item.productId) : null;
-      if(product){
-        item.price = unitPrice(product, newUnit);
-      } else if(item.price > 0){
-        // لو الصنف اتكتب يدوي
-        if(newUnit === 'piece' && oldUnit === 'dozen'){
-          item.price = Math.round(((item.price / 12) + Number.EPSILON) * 100) / 100;
-        } else if(newUnit === 'dozen' && oldUnit === 'piece'){
-          item.price = Math.round(((item.price * 12) + Number.EPSILON) * 100) / 100;
-        }
+      // Ensure dozenPrice is calculated from active price so custom overrides (e.g. 900 instead of 1000) are never lost
+      const currentPrice = Number(item.price) || 0;
+      const dPrice = (item.dozenPrice != null && item.dozenPrice > 0)
+        ? item.dozenPrice
+        : (oldUnit === 'dozen' ? currentPrice : currentPrice * 12);
+      item.dozenPrice = dPrice;
+
+      if(newUnit === 'piece'){
+        item.price = Math.round(((dPrice / 12) + Number.EPSILON) * 100) / 100;
+      } else {
+        item.price = Math.round((dPrice + Number.EPSILON) * 100) / 100;
       }
       renderItems();
       updateTotals();
@@ -1584,7 +1625,13 @@ function bindItemEvents(){
     inp.oninput = ()=>{
       const rowId = Number(inp.dataset.row);
       const item = state.items.find(it=>it.rowId===rowId);
-      item.price = Number(inp.value)||0;
+      const val = Number(inp.value)||0;
+      item.price = val;
+      if(item.unit === 'dozen'){
+        item.dozenPrice = val;
+      } else {
+        item.dozenPrice = val * 12;
+      }
       updateTotals();
       refreshLineTotalOnly(rowId);
     };
@@ -1623,6 +1670,9 @@ function updateSaveEnabled(){
   const banner = document.getElementById('matchBanner');
   let matched = Math.abs(diff) < 0.01 && total > 0;
 
+  const hasParty = !!(state.party && state.party.trim());
+  const hasArea = !!(state.area && state.area.trim());
+
   if(total <= 0){
     banner.className = 'match-banner bad';
     banner.textContent = 'أضف أصناف الفاتورة أولاً';
@@ -1632,11 +1682,17 @@ function updateSaveEnabled(){
   } else if(!matched && diff < 0){
     banner.className = 'match-banner bad';
     banner.textContent = `في زيادة ${fmt(Math.abs(diff))} عن إجمالي الفاتورة`;
+  } else if(!hasParty || !hasArea){
+    banner.className = 'match-banner bad';
+    const missing = [];
+    if(!hasParty) missing.push('اسم العميل');
+    if(!hasArea) missing.push('المنطقة');
+    banner.textContent = `⚠️ يرجى تحديد ${missing.join(' و ')} أولاً (حقول إجبارية)`;
   } else {
     banner.className = 'match-banner ok';
     banner.textContent = 'مطابق ✓ إجمالي طرق الدفع = إجمالي الفاتورة';
   }
-  document.getElementById('saveBtn').disabled = !(matched && hasItems);
+  document.getElementById('saveBtn').disabled = !(matched && hasItems && hasParty && hasArea);
   refreshQuickPayHighlight();
   saveDraft();
 }
@@ -1690,6 +1746,18 @@ document.getElementById('resetBtn').addEventListener('click', resetForm);
 document.getElementById('addItemBtn').addEventListener('click', addItemRow);
 
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
+  if(state.type !== 'transfer'){
+    if(!state.party || !state.party.trim()){
+      showToast('يرجى اختيار أو كتابة اسم العميل أولاً');
+      document.getElementById('partyInput')?.focus();
+      return;
+    }
+    if(!state.area || !state.area.trim()){
+      showToast('يرجى اختيار أو كتابة المنطقة أولاً');
+      document.getElementById('areaInput')?.focus();
+      return;
+    }
+  }
   const t = typeMeta(state.type);
   const num = await nextInvoiceNumber(state.type);
   const invoiceNumber = `${t.prefix}-${String(num).padStart(4,'0')}`;
@@ -2860,27 +2928,136 @@ document.getElementById('exportLedgerExcelBtn').addEventListener('click', async 
 
 /* ================= PAYMENTS / COLLECTIONS ENGINE ================= */
 let currentPaymentMethod = 'cash';
+let currentReceiptImage = null;
+
+function compressReceiptImage(file, maxWidth = 900, maxHeight = 900, quality = 0.72){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        if(w > h){
+          if(w > maxWidth){
+            h = Math.round((h * maxWidth) / w);
+            w = maxWidth;
+          }
+        } else {
+          if(h > maxHeight){
+            w = Math.round((w * maxHeight) / h);
+            h = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function openReceiptModal(dataUrl){
+  const modal = document.getElementById('receiptImageModal');
+  const modalImg = document.getElementById('receiptModalImg');
+  if(modal && modalImg && dataUrl){
+    modalImg.src = dataUrl;
+    modal.style.display = 'flex';
+  }
+}
+
+function setupPaymentReceiptAttachment(){
+  const fileInput = document.getElementById('payReceiptFileInput');
+  const selectBtn = document.getElementById('payReceiptSelectBtn');
+  const statusText = document.getElementById('payReceiptStatus');
+  const previewBox = document.getElementById('payReceiptPreviewBox');
+  const previewImg = document.getElementById('payReceiptPreviewImg');
+  const removeBtn = document.getElementById('payReceiptRemoveBtn');
+  const modal = document.getElementById('receiptImageModal');
+  const modalClose = document.getElementById('receiptModalCloseBtn');
+
+  if(selectBtn && fileInput){
+    selectBtn.onclick = () => fileInput.click();
+    fileInput.onchange = async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if(!file) return;
+      try {
+        if(statusText) { statusText.textContent = 'جاري معالجة الصورة...'; statusText.style.color = '#d97706'; }
+        const compressed = await compressReceiptImage(file);
+        currentReceiptImage = compressed;
+        if(previewImg) previewImg.src = compressed;
+        if(previewBox) previewBox.style.display = 'block';
+        if(statusText) { statusText.textContent = 'تم إرفاق صورة الإشعار بنجاح ✅'; statusText.style.color = '#059669'; }
+      } catch(err){
+        console.error(err);
+        showToast('تعذر قراءة الصورة');
+        if(statusText) { statusText.textContent = 'خطأ في معالجة الصورة'; statusText.style.color = '#dc2626'; }
+      }
+    };
+  }
+
+  if(removeBtn){
+    removeBtn.onclick = () => {
+      currentReceiptImage = null;
+      if(fileInput) fileInput.value = '';
+      if(previewImg) previewImg.src = '';
+      if(previewBox) previewBox.style.display = 'none';
+      if(statusText) { statusText.textContent = 'لم يتم إرفاق إشعار'; statusText.style.color = '#991B1B'; }
+    };
+  }
+
+  if(previewImg){
+    previewImg.onclick = () => {
+      if(currentReceiptImage) openReceiptModal(currentReceiptImage);
+    };
+  }
+
+  if(modalClose && modal){
+    modalClose.onclick = () => { modal.style.display = 'none'; };
+    modal.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; };
+  }
+}
 
 function setupPaymentMethodButtons(){
   const cashBtn = document.getElementById('payMethodCashBtn');
   const vodafoneBtn = document.getElementById('payMethodVodafoneBtn');
-  if(!cashBtn || !vodafoneBtn) return;
+  const postBtn = document.getElementById('payMethodPostBtn');
+  const receiptSection = document.getElementById('payReceiptSection');
+  if(!cashBtn || !vodafoneBtn || !postBtn) return;
+
+  setupPaymentReceiptAttachment();
 
   function updateBtnStyles(){
+    // Reset all buttons to default state
+    [cashBtn, vodafoneBtn, postBtn].forEach(btn => {
+      btn.style.background = '#fff';
+      btn.style.borderColor = 'var(--line)';
+      btn.style.color = 'var(--ink)';
+    });
+
+    if(receiptSection){
+      receiptSection.style.display = (currentPaymentMethod === 'vodafone') ? 'block' : 'none';
+    }
+
     if(currentPaymentMethod === 'cash'){
       cashBtn.style.background = 'var(--brand)';
       cashBtn.style.borderColor = 'var(--brand)';
       cashBtn.style.color = '#fff';
-      vodafoneBtn.style.background = '#fff';
-      vodafoneBtn.style.borderColor = 'var(--line)';
-      vodafoneBtn.style.color = 'var(--ink)';
-    } else {
+    } else if(currentPaymentMethod === 'vodafone'){
       vodafoneBtn.style.background = '#dc2626';
       vodafoneBtn.style.borderColor = '#dc2626';
       vodafoneBtn.style.color = '#fff';
-      cashBtn.style.background = '#fff';
-      cashBtn.style.borderColor = 'var(--line)';
-      cashBtn.style.color = 'var(--ink)';
+    } else if(currentPaymentMethod === 'post'){
+      postBtn.style.background = '#d97706';
+      postBtn.style.borderColor = '#d97706';
+      postBtn.style.color = '#fff';
     }
   }
 
@@ -2890,6 +3067,10 @@ function setupPaymentMethodButtons(){
   });
   vodafoneBtn.addEventListener('click', ()=>{
     currentPaymentMethod = 'vodafone';
+    updateBtnStyles();
+  });
+  postBtn.addEventListener('click', ()=>{
+    currentPaymentMethod = 'post';
     updateBtnStyles();
   });
   updateBtnStyles();
@@ -3045,22 +3226,26 @@ async function refreshPaymentsTable(){
   let totalSum = 0;
   let cashSum = 0;
   let vodafoneSum = 0;
+  let postSum = 0;
 
   payments.forEach(p => {
     const amt = Number(p.amount) || 0;
     totalSum += amt;
     if(p.method === 'cash') cashSum += amt;
     else if(p.method === 'vodafone') vodafoneSum += amt;
+    else if(p.method === 'post') postSum += amt;
   });
 
   const totalEl = document.getElementById('paymentsTotalVal');
   const cashEl = document.getElementById('paymentsCashVal');
   const vodafoneEl = document.getElementById('paymentsVodafoneVal');
+  const postEl = document.getElementById('paymentsPostVal');
   const countEl = document.getElementById('paymentsTotalCount');
 
   if(totalEl) totalEl.textContent = fmt(totalSum);
   if(cashEl) cashEl.textContent = fmt(cashSum);
   if(vodafoneEl) vodafoneEl.textContent = fmt(vodafoneSum);
+  if(postEl) postEl.textContent = fmt(postSum);
   if(countEl) countEl.textContent = `${payments.length} عملية سداد`;
 
   const filtered = payments.filter(p => {
@@ -3082,8 +3267,13 @@ async function refreshPaymentsTable(){
     const dateStr = p.createdAt ? `${new Date(p.createdAt).toLocaleDateString('ar-EG')} <span style="font-size:11px;color:var(--ink-soft);">${new Date(p.createdAt).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}</span>` : (p.date || '');
     const badge = p.method === 'cash' 
       ? `<span class="pay-badge-cash">💵 نقدي</span>`
-      : `<span class="pay-badge-vodafone">📱 فودافون كاش</span>`;
+      : (p.method === 'vodafone'
+        ? `<span class="pay-badge-vodafone">📱 فودافون كاش</span>`
+        : `<span class="pay-badge-post">📮 بريد</span>`);
     const repBadge = p.deviceName ? `<span style="font-size:11px;background:#f1f5f9;color:#475569;padding:2px 6px;border-radius:4px;">${p.deviceName}</span>` : '-';
+    const receiptBtn = p.receiptImage
+      ? `<button type="button" class="btn btn-ghost view-pay-receipt-btn" data-id="${p.id}" style="padding:2px 8px;font-size:11px;font-weight:800;background:#FEF2F2;border-color:#FCA5A5;color:#DC2626;border-radius:6px;cursor:pointer;" title="عرض إشعار التحويل">📷 إشعار</button>`
+      : `<span style="color:var(--ink-soft);font-size:11px;">-</span>`;
 
     rowsHtml += `
       <tr>
@@ -3092,6 +3282,7 @@ async function refreshPaymentsTable(){
         <td style="font-weight:700;color:var(--ink);">${p.party||'-'}</td>
         <td style="text-align:center;">${badge}</td>
         <td style="text-align:center;font-weight:900;color:var(--brand-ink);font-size:14px;">${fmt(p.amount||0)} ج</td>
+        <td style="text-align:center;">${receiptBtn}</td>
         <td style="text-align:center;">${repBadge}</td>
         <td style="font-size:12px;color:var(--ink-soft);">${p.note || '-'}</td>
         <td style="text-align:center;">
@@ -3112,6 +3303,7 @@ async function refreshPaymentsTable(){
           <th>اسم العميل</th>
           <th style="width:90px;text-align:center;">طريقة السداد</th>
           <th style="width:95px;text-align:center;">المبلغ</th>
+          <th style="width:70px;text-align:center;">الإشعار</th>
           <th style="width:85px;text-align:center;">المندوب</th>
           <th>ملاحظات</th>
           <th style="width:50px;text-align:center;">حذف</th>
@@ -3120,6 +3312,17 @@ async function refreshPaymentsTable(){
       <tbody>${rowsHtml}</tbody>
     </table>
   `;
+
+  // Bind view receipt buttons
+  tableContainer.querySelectorAll('.view-pay-receipt-btn').forEach(btn => {
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.id;
+      const payment = payments.find(p => p.id === id);
+      if(payment && payment.receiptImage){
+        openReceiptModal(payment.receiptImage);
+      }
+    });
+  });
 
   // Bind delete buttons
   tableContainer.querySelectorAll('.delete-payment-btn').forEach(btn => {
@@ -3179,12 +3382,12 @@ if(savePayBtn){
       deviceName: devName || "عام",
       party: customer,
       method: currentPaymentMethod,
-      methodName: currentPaymentMethod === 'cash' ? 'نقدي' : 'فودافون كاش',
+      methodName: currentPaymentMethod === 'cash' ? 'نقدي' : (currentPaymentMethod === 'vodafone' ? 'فودافون كاش' : 'بريد'),
       amount: amount,
       note: note,
       items: [
         {
-          name: `سداد عميل (${currentPaymentMethod === 'cash' ? 'نقدي' : 'فودافون كاش'})`,
+          name: `سداد عميل (${currentPaymentMethod === 'cash' ? 'نقدي' : (currentPaymentMethod === 'vodafone' ? 'فودافون كاش' : 'بريد')})`,
           unit: 'piece',
           qty: 1,
           price: amount,
@@ -3195,9 +3398,11 @@ if(savePayBtn){
       pay: {
         cash: currentPaymentMethod === 'cash' ? amount : 0,
         vodafone: currentPaymentMethod === 'vodafone' ? amount : 0,
+        post: currentPaymentMethod === 'post' ? amount : 0,
         instapay: 0,
         credit: 0
       },
+      receiptImage: currentReceiptImage || null,
       date: new Date().toLocaleDateString('ar-EG'),
       createdAt: Date.now()
     };
@@ -3211,6 +3416,16 @@ if(savePayBtn){
 
     if(amountInput) amountInput.value = '';
     if(noteInput) noteInput.value = '';
+
+    currentReceiptImage = null;
+    const recFileInput = document.getElementById('payReceiptFileInput');
+    const recPreviewBox = document.getElementById('payReceiptPreviewBox');
+    const recStatus = document.getElementById('payReceiptStatus');
+    const recPreviewImg = document.getElementById('payReceiptPreviewImg');
+    if(recFileInput) recFileInput.value = '';
+    if(recPreviewImg) recPreviewImg.src = '';
+    if(recPreviewBox) recPreviewBox.style.display = 'none';
+    if(recStatus) { recStatus.textContent = 'لم يتم إرفاق إشعار'; recStatus.style.color = '#991B1B'; }
 
     await refreshPaymentsTable();
     await updatePayPartyDebt(customer);
@@ -3250,12 +3465,14 @@ if(exportPayExcelBtn){
     let totalAmount = 0;
     let totalCash = 0;
     let totalVodafone = 0;
+    let totalPost = 0;
 
     payments.forEach((p, idx) => {
       const amt = Number(p.amount) || 0;
       totalAmount += amt;
       if(p.method === 'cash') totalCash += amt;
       else if(p.method === 'vodafone') totalVodafone += amt;
+      else if(p.method === 'post') totalPost += amt;
 
       const dateT = p.createdAt ? `${new Date(p.createdAt).toLocaleDateString('ar-EG')} ${new Date(p.createdAt).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}` : (p.date || '');
 
@@ -3264,7 +3481,7 @@ if(exportPayExcelBtn){
         dateT,
         p.number || '',
         p.party || '',
-        p.methodName || (p.method === 'cash' ? 'نقدي' : 'فودافون كاش'),
+        p.methodName || (p.method === 'cash' ? 'نقدي' : (p.method === 'vodafone' ? 'فودافون كاش' : 'بريد')),
         amt,
         p.deviceName || '',
         p.note || ''
@@ -3275,6 +3492,7 @@ if(exportPayExcelBtn){
     data.push(["", "الإجمالي العام", "", "", "", totalAmount, "", ""]);
     data.push(["", "إجمالي النقدي (كاش)", "", "", "", totalCash, "", ""]);
     data.push(["", "إجمالي فودافون كاش", "", "", "", totalVodafone, "", ""]);
+    data.push(["", "إجمالي البريد", "", "", "", totalPost, "", ""]);
 
     const ws = XLSX.utils.aoa_to_sheet(data);
     ws['!cols'] = [{ wch: 6 }, { wch: 20 }, { wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 14 }, { wch: 16 }, { wch: 24 }];
@@ -3372,5 +3590,14 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+
+<!-- Modal for Full-Size Receipt Image -->
+<div id="receiptImageModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div style="position:relative;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;">
+    <button type="button" id="receiptModalCloseBtn" style="position:absolute;top:-14px;right:-14px;background:#fff;color:#000;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.5);">×</button>
+    <img id="receiptModalImg" src="" alt="إشعار التحويل" style="max-width:88vw;max-height:85vh;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.5);object-fit:contain;">
+  </div>
+</div>
+
 </body>
 </html>
