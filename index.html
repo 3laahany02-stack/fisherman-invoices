@@ -717,20 +717,21 @@
       </div>
 
       <!-- Vodafone Cash Receipt / Screenshot Attachment -->
-      <div class="field" id="payReceiptSection" style="margin-bottom:14px;display:none;background:#FEF2F2;border:1.5px dashed #FCA5A5;padding:12px;border-radius:10px;">
-        <label style="font-weight:700;color:#991B1B;display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+      <div class="field" id="payReceiptSection" style="margin-bottom:14px;display:none;background:#F8FAFC;border:1.5px dashed #CBD5E1;padding:12px;border-radius:10px;">
+        <label style="font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px;">
           <span>📱 إشعار / سكرين شوت التحويل (فودافون كاش)</span>
+          <span style="font-size:11px;font-weight:700;color:var(--ink-soft);background:#EDF2F7;padding:2px 8px;border-radius:6px;">اختياري (غير إجباري)</span>
         </label>
         <input type="file" id="payReceiptFileInput" accept="image/*" capture="environment" style="display:none;">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <button type="button" class="btn btn-ghost" id="payReceiptSelectBtn" style="padding:8px 14px;font-size:13px;font-weight:700;background:#fff;border-color:#FCA5A5;color:#B91C1C;cursor:pointer;">
-            📷 التقاط أو اختيار صورة الوصل
+          <button type="button" class="btn btn-ghost" id="payReceiptSelectBtn" style="padding:8px 14px;font-size:13px;font-weight:700;background:#fff;border-color:#CBD5E1;color:var(--ink);cursor:pointer;">
+            📷 التقاط أو اختيار صورة الوصل (اختياري)
           </button>
-          <span id="payReceiptStatus" style="font-size:12px;color:#991B1B;font-weight:600;">لم يتم إرفاق إشعار</span>
+          <span id="payReceiptStatus" style="font-size:12px;color:var(--ink-soft);font-weight:600;">لم يتم إرفاق إشعار (اختياري)</span>
         </div>
         <!-- Preview Box -->
         <div id="payReceiptPreviewBox" style="margin-top:10px;display:none;position:relative;width:fit-content;">
-          <img id="payReceiptPreviewImg" src="" alt="إشعار التحويل" style="max-width:140px;max-height:140px;border-radius:8px;border:2px solid #FCA5A5;object-fit:cover;display:block;cursor:pointer;" title="انقر لتكبير الصورة">
+          <img id="payReceiptPreviewImg" src="" alt="إشعار التحويل" style="max-width:140px;max-height:140px;border-radius:8px;border:2px solid #CBD5E1;object-fit:cover;display:block;cursor:pointer;" title="انقر لتكبير الصورة">
           <button type="button" id="payReceiptRemoveBtn" style="position:absolute;top:-8px;right:-8px;background:#DC2626;color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.3);" title="حذف الصورة">×</button>
         </div>
       </div>
@@ -3009,7 +3010,7 @@ function setupPaymentReceiptAttachment(){
       if(fileInput) fileInput.value = '';
       if(previewImg) previewImg.src = '';
       if(previewBox) previewBox.style.display = 'none';
-      if(statusText) { statusText.textContent = 'لم يتم إرفاق إشعار'; statusText.style.color = '#991B1B'; }
+      if(statusText) { statusText.textContent = 'لم يتم إرفاق إشعار (اختياري)'; statusText.style.color = 'var(--ink-soft)'; }
     };
   }
 
@@ -3425,7 +3426,7 @@ if(savePayBtn){
     if(recFileInput) recFileInput.value = '';
     if(recPreviewImg) recPreviewImg.src = '';
     if(recPreviewBox) recPreviewBox.style.display = 'none';
-    if(recStatus) { recStatus.textContent = 'لم يتم إرفاق إشعار'; recStatus.style.color = '#991B1B'; }
+    if(recStatus) { recStatus.textContent = 'لم يتم إرفاق إشعار (اختياري)'; recStatus.style.color = 'var(--ink-soft)'; }
 
     await refreshPaymentsTable();
     await updatePayPartyDebt(customer);
