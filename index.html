@@ -93,8 +93,8 @@
     display:inline-flex;align-items:center;gap:6px;
     background:#ffffff;border:1.5px solid var(--line);
     border-radius:999px;padding:6px 12px;font-family:inherit;
-    font-weight:700;font-size:13px;color:var(--brand);
-    cursor:pointer;white-space:nowrap;max-width:210px;
+    font-weight:700;font-size:12.5px;color:var(--brand);
+    cursor:pointer;white-space:nowrap;max-width:260px;
     box-shadow:var(--shadow);outline:none;
     -webkit-tap-highlight-color:transparent;
     transition:all .15s ease;
@@ -102,7 +102,7 @@
   }
   .topbar-rep-pill:active{transform:scale(0.97);background:#f8fafc;}
   .topbar-rep-pill span#topbarDeviceNameTxt{
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;display:inline-block;vertical-align:middle;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;display:inline-block;vertical-align:middle;
   }
   .topbar-nav-row{
     display:flex;align-items:center;gap:6px;
@@ -593,6 +593,23 @@
       <button class="icon-btn" id="backFromStockBtn">فاتورة جديدة +</button>
     </div>
 
+    <!-- بطاقة اختيار المخزن / العهدة -->
+    <div class="inventory-selector-card" style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:12px 14px;margin-bottom:14px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+        <span style="font-size:13px;font-weight:800;color:var(--brand-ink);display:flex;align-items:center;gap:6px;">
+          <span>🏬</span>
+          <span>المخزن / العهدة المعروضة:</span>
+        </span>
+        <span id="currentStockInventoryLbl" style="font-size:12px;background:#e0f2fe;color:#0369a1;padding:2px 10px;border-radius:999px;font-weight:800;">🏢 مخزون رئيسي</span>
+      </div>
+      <div class="inventory-tabs-bar" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;">
+        <button type="button" class="stock-filter-chip active inv-tab-btn" data-inv="مخزون رئيسي">🏢 مخزون رئيسي</button>
+        <button type="button" class="stock-filter-chip inv-tab-btn" data-inv="مخزون العربية النص">🚐 العربية النص</button>
+        <button type="button" class="stock-filter-chip inv-tab-btn" data-inv="مخزون العربيه الربع">🛻 العربية الربع</button>
+        <button type="button" class="stock-filter-chip inv-tab-btn" data-inv="all">🌐 إجمالي الكل</button>
+      </div>
+    </div>
+
     <!-- بطاقات إحصائيات المخزن -->
     <div class="stock-summary-grid">
       <div class="stock-stat-card">
@@ -911,9 +928,18 @@
     <p style="font-size:13px;color:var(--ink-soft);margin:0 0 16px;line-height:1.5;">
       أهلاً بك! أدخل اسمك هنا (مرة واحدة فقط). سيتم حفظه على جهازك وترحيل جميع الفواتير والسدادات إلى شيت الإكسل باسمك تلقائياً دون الحاجة لكتابته في كل فاتورة.
     </p>
-    <div class="field" style="margin-bottom:16px;text-align:right;">
+    <div class="field" style="margin-bottom:14px;text-align:right;">
       <label style="font-weight:700;font-size:13px;color:var(--ink);">اسم المندوب أو الفرع *</label>
       <input type="text" id="deviceSetupInput" placeholder="مثال: أحمد عبد الله / فرع 1" style="font-weight:800;font-size:15px;height:44px;border-radius:8px;border:1.5px solid #cbd5e1;padding:0 12px;background:#fff;width:100%;box-sizing:border-box;">
+    </div>
+    <div class="field" style="margin-bottom:18px;text-align:right;">
+      <label style="font-weight:700;font-size:13px;color:var(--ink);">المخزن / العهدة الأساسية لهذا الجهاز *</label>
+      <select id="deviceSetupInventorySelect" style="font-weight:800;font-size:14px;height:44px;border-radius:8px;border:1.5px solid #cbd5e1;padding:0 10px;background:#fff;width:100%;box-sizing:border-box;color:var(--brand-ink);">
+        <option value="مخزون رئيسي">🏢 مخزون رئيسي</option>
+        <option value="مخزون العربية النص">🚐 مخزون العربية النص</option>
+        <option value="مخزون العربيه الربع">🛻 مخزون العربيه الربع</option>
+      </select>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">تُسحب وتُضاف مبيعات وتحويلات هذا الجهاز من هذا المخزن تلقائياً</div>
     </div>
     <button type="button" class="btn btn-primary" id="saveDeviceSetupBtn" style="width:100%;height:44px;font-size:15px;font-weight:800;">
       💾 حفظ ومتابعة
@@ -989,7 +1015,6 @@ const DEFAULT_PRODUCTS = [
 ].map((p,i)=>({id:i, name:p[0], price:p[1]}));
 
 let PRODUCTS = [...DEFAULT_PRODUCTS];
-let STOCK_BALANCES = {};
 let currentStockFilter = 'all';
 let currentStockQuery = '';
 
@@ -1231,21 +1256,44 @@ const CUSTOMERS = [
   "ابو ياسين ابو قرقاس"
 ];
 
-/* ================= STATE ================= */
+/* ================= INVENTORIES & STATE ================= */
+const INVENTORIES = [
+  "مخزون رئيسي",
+  "مخزون العربية النص",
+  "مخزون العربيه الربع"
+];
+
+function getInvIcon(inv){
+  if(inv === "مخزون رئيسي") return "🏢";
+  if(inv === "مخزون العربية النص") return "🚐";
+  if(inv === "مخزون العربيه الربع") return "🛻";
+  return "📦";
+}
+
+function getInvShortName(inv){
+  if(inv === "مخزون رئيسي") return "🏢 رئيسي";
+  if(inv === "مخزون العربية النص") return "🚐 عربية نص";
+  if(inv === "مخزون العربيه الربع") return "🛻 عربية ربع";
+  return inv || "المخزن";
+}
+
+let savedDeviceName = "";
+let savedUserInventory = "مخزون رئيسي";
+
 let state = {
   type: "sale",
   party: "",
   area: "",
   deviceName: "",
-  fromStore: "",
-  toStore: "",
+  store: "مخزون رئيسي",
+  fromStore: "مخزون رئيسي",
+  toStore: "مخزون العربية النص",
   note: "",
   items: [], // {rowId, productId, unit:'piece'|'dozen', qty, price}
   pay: {vodafone:0, cash:0, credit:0, instapay:0}
 };
 let rowSeq = 1;
 let currentReceiptInvoiceId = null;
-let savedDeviceName = "";
 
 /* ================= STORAGE HELPERS ================= */
 async function loadShopName(){
@@ -1267,12 +1315,21 @@ async function loadDeviceName(){
       savedDeviceName = local.trim();
       state.deviceName = savedDeviceName;
     }
+    const localInv = localStorage.getItem('fisherman_user_inventory');
+    if(localInv && INVENTORIES.includes(localInv.trim())){
+      savedUserInventory = localInv.trim();
+      state.store = savedUserInventory;
+    }
     const r = await window.storage.get('device-settings', false);
     if(r && r.value){
       const s = JSON.parse(r.value);
       if(s.deviceName && s.deviceName.trim()){
         savedDeviceName = s.deviceName.trim();
         state.deviceName = savedDeviceName;
+      }
+      if(s.inventory && INVENTORIES.includes(s.inventory.trim())){
+        savedUserInventory = s.inventory.trim();
+        state.store = savedUserInventory;
       }
     }
   }catch(e){}
@@ -1281,24 +1338,45 @@ async function loadDeviceName(){
     openDeviceSetupModal();
   }
 }
-async function saveDeviceName(name){
+async function saveDeviceSettings(name, inventory){
   savedDeviceName = (name || "").trim();
   state.deviceName = savedDeviceName;
-  try{ localStorage.setItem('fisherman_device_name', savedDeviceName); }catch(e){}
-  try{ await window.storage.set('device-settings', JSON.stringify({deviceName: savedDeviceName}), false); }catch(e){}
+  if(inventory && INVENTORIES.includes(inventory.trim())){
+    savedUserInventory = inventory.trim();
+    state.store = savedUserInventory;
+  }
+  try{ 
+    localStorage.setItem('fisherman_device_name', savedDeviceName); 
+    localStorage.setItem('fisherman_user_inventory', savedUserInventory); 
+  }catch(e){}
+  try{ 
+    await window.storage.set('device-settings', JSON.stringify({
+      deviceName: savedDeviceName,
+      inventory: savedUserInventory
+    }), false); 
+  }catch(e){}
   updateTopbarDeviceName();
+}
+async function saveDeviceName(name){
+  await saveDeviceSettings(name, savedUserInventory);
 }
 function updateTopbarDeviceName(){
   const txt = document.getElementById('topbarDeviceNameTxt');
   if(txt){
-    txt.textContent = savedDeviceName ? savedDeviceName : "تحديد المندوب";
+    const dName = savedDeviceName ? savedDeviceName : "تحديد المندوب";
+    const invShort = getInvShortName(savedUserInventory);
+    txt.textContent = `${dName} | ${invShort}`;
   }
 }
 function openDeviceSetupModal(){
   const modal = document.getElementById('deviceSetupModal');
   const input = document.getElementById('deviceSetupInput');
+  const invSelect = document.getElementById('deviceSetupInventorySelect');
   if(modal && input){
     input.value = savedDeviceName || "";
+    if(invSelect && savedUserInventory){
+      invSelect.value = savedUserInventory;
+    }
     modal.style.display = 'flex';
     setTimeout(()=> input.focus(), 100);
   }
@@ -1483,19 +1561,108 @@ function renderPartyCard(){
   const title = document.getElementById('partyTitle');
   const t = typeMeta(state.type);
   if(state.type === 'transfer'){
-    title.textContent = "بيانات التحويل";
+    title.textContent = "بيانات التحويل بين المخازن";
+    if(!state.fromStore) state.fromStore = savedUserInventory || "مخزون رئيسي";
+    if(!state.toStore || state.toStore === state.fromStore){
+      state.toStore = (state.fromStore === "مخزون رئيسي") ? "مخزون العربية النص" : "مخزون رئيسي";
+    }
+
+    const isSameStore = state.fromStore === state.toStore;
+    const directionHtml = isSameStore
+      ? `<div style="background:#FEF2F2;border:1.5px solid #F87171;color:#991B1B;padding:9px 12px;border-radius:10px;font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+           <span>⚠️</span><span>تنبيه: تم اختيار نفس المخزن! يرجى اختيار مخزنين مختلفين لإتمام التحويل.</span>
+         </div>`
+      : `<div style="background:#F0FDF4;border:1.5px solid #BBF7D0;color:#166534;padding:9px 12px;border-radius:10px;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+           <span style="display:flex;align-items:center;gap:6px;">
+             <span style="color:#B91C1C;">🔻 يُخصم من:</span>
+             <strong style="color:#B91C1C;font-size:13px;">${getInvIcon(state.fromStore)} ${state.fromStore}</strong>
+           </span>
+           <span style="font-size:16px;color:#15803D;">⬅️</span>
+           <span style="display:flex;align-items:center;gap:6px;">
+             <span style="color:#15803D;">🔺 يُضاف إلى:</span>
+             <strong style="color:#15803D;font-size:13px;">${getInvIcon(state.toStore)} ${state.toStore}</strong>
+           </span>
+         </div>`;
+
     card.innerHTML = `
-      <div class="two-col">
-        <div class="field"><label>من مخزن</label><input id="fromStoreInput" value="${state.fromStore||""}" placeholder="مثال: المخزن الرئيسي"></div>
-        <div class="field"><label>إلى مخزن</label><input id="toStoreInput" value="${state.toStore||""}" placeholder="مثال: فرع..."></div>
+      ${directionHtml}
+      <div class="two-col" style="align-items:flex-end;">
+        <div class="field">
+          <label style="font-weight:800;color:#B91C1C;display:flex;align-items:center;gap:4px;">
+            <span>🔻</span><span>من مخزن (المنصرف منه -) *</span>
+          </label>
+          <select id="fromStoreSelect" style="font-weight:800;font-size:14px;height:44px;border-radius:8px;border:1.5px solid #cbd5e1;padding:0 8px;background:#fff;width:100%;color:#B91C1C;">
+            ${INVENTORIES.map(inv => `<option value="${inv}" ${state.fromStore === inv ? 'selected' : ''}>${getInvIcon(inv)} ${inv}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label style="font-weight:800;color:#15803D;display:flex;align-items:center;gap:4px;">
+            <span>🔺</span><span>إلى مخزن (الوارد إليه +) *</span>
+          </label>
+          <select id="toStoreSelect" style="font-weight:800;font-size:14px;height:44px;border-radius:8px;border:1.5px solid #cbd5e1;padding:0 8px;background:#fff;width:100%;color:#15803D;">
+            ${INVENTORIES.map(inv => `<option value="${inv}" ${state.toStore === inv ? 'selected' : ''}>${getInvIcon(inv)} ${inv}</option>`).join("")}
+          </select>
+        </div>
       </div>
-      <div class="field"><label>ملاحظات (اختياري)</label><input id="noteInput" value="${state.note||""}"></div>
+
+      <div style="display:flex;gap:8px;margin:8px 0 12px;flex-wrap:wrap;">
+        <button type="button" id="swapStoresBtn" class="btn btn-ghost" style="flex:1;min-width:120px;font-size:12px;font-weight:800;padding:6px 10px;background:#f8fafc;border:1px solid #cbd5e1;color:var(--brand-ink);">
+          🔄 تبديل المخزنين
+        </button>
+        <button type="button" id="quickReceiveBtn" class="btn btn-ghost" style="flex:1;min-width:130px;font-size:12px;font-weight:800;padding:6px 10px;background:#ECFDF5;border:1px solid #A7F3D0;color:#059669;">
+          📥 استلام لعهدتي (${getInvShortName(savedUserInventory)})
+        </button>
+        <button type="button" id="quickReturnBtn" class="btn btn-ghost" style="flex:1;min-width:130px;font-size:12px;font-weight:800;padding:6px 10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;">
+          📤 إرجاع للرئيسي
+        </button>
+      </div>
+
+      <div class="field"><label style="font-weight:700;">ملاحظات التحويل (اختياري)</label><input id="noteInput" value="${state.note||""}" placeholder="مثال: تحويل عهدة الصباح / بضاعة إضافية"></div>
     `;
-    document.getElementById('fromStoreInput').addEventListener('input', e=>{ state.fromStore = e.target.value; saveDraft(); });
-    document.getElementById('toStoreInput').addEventListener('input', e=>{ state.toStore = e.target.value; saveDraft(); });
+
+    document.getElementById('fromStoreSelect').addEventListener('change', e=>{
+      state.fromStore = e.target.value;
+      renderPartyCard();
+      renderItems();
+      updateSaveEnabled();
+      saveDraft();
+    });
+    document.getElementById('toStoreSelect').addEventListener('change', e=>{
+      state.toStore = e.target.value;
+      renderPartyCard();
+      renderItems();
+      updateSaveEnabled();
+      saveDraft();
+    });
+    document.getElementById('swapStoresBtn').addEventListener('click', ()=>{
+      const temp = state.fromStore;
+      state.fromStore = state.toStore;
+      state.toStore = temp;
+      renderPartyCard();
+      renderItems();
+      updateSaveEnabled();
+      saveDraft();
+    });
+    document.getElementById('quickReceiveBtn').addEventListener('click', ()=>{
+      state.toStore = savedUserInventory || "مخزون العربية النص";
+      state.fromStore = (state.toStore === "مخزون رئيسي") ? "مخزون العربية النص" : "مخزون رئيسي";
+      renderPartyCard();
+      renderItems();
+      updateSaveEnabled();
+      saveDraft();
+    });
+    document.getElementById('quickReturnBtn').addEventListener('click', ()=>{
+      state.fromStore = savedUserInventory || "مخزون العربية النص";
+      state.toStore = "مخزون رئيسي";
+      renderPartyCard();
+      renderItems();
+      updateSaveEnabled();
+      saveDraft();
+    });
     document.getElementById('noteInput').addEventListener('input', e=>{ state.note = e.target.value; saveDraft(); });
   } else {
     title.textContent = "بيانات الفاتورة";
+    if(!state.store) state.store = savedUserInventory || "مخزون رئيسي";
     const areaOptionsHtml = AREAS.map(a=>`<div class="area-option" data-value="${a}">${a}</div>`).join("");
     const partyOptionsHtml = CUSTOMERS.map(c=>`<div class="area-option" data-value="${c}">${c}</div>`).join("");
     card.innerHTML = `
@@ -1511,7 +1678,16 @@ function renderPartyCard(){
           <div class="area-dropdown" id="areaDropdown">${areaOptionsHtml}</div>
         </div>
       </div>
-      <div class="field"><label>ملاحظات (اختياري)</label><input id="noteInput" value="${state.note||""}"></div>
+      <div class="field area-field" style="margin-top:10px;">
+        <label style="font-weight:700;display:flex;align-items:center;gap:6px;">
+          <span>🏬 المخزن / العهدة:</span>
+          <span style="font-size:11px;color:var(--ink-soft);font-weight:normal;">(${t.label === 'شراء' || t.label === 'مرتجع' ? 'سيتم إضافة البضاعة لهذا المخزن' : 'سيتم خصم البضاعة من هذا المخزن'})</span>
+        </label>
+        <select id="invoiceStoreSelect" style="font-weight:800;font-size:13.5px;height:42px;border-radius:8px;border:1.5px solid #cbd5e1;padding:0 10px;background:#f8fafc;width:100%;color:var(--brand-ink);">
+          ${INVENTORIES.map(inv => `<option value="${inv}" ${(state.store||savedUserInventory) === inv ? 'selected' : ''}>${getInvIcon(inv)} ${inv}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field" style="margin-top:10px;"><label>ملاحظات (اختياري)</label><input id="noteInput" value="${state.note||""}"></div>
     `;
     function setupAutocomplete(inputEl, dropdownEl, onChange){
       function filterOptions(){
@@ -1547,6 +1723,14 @@ function renderPartyCard(){
     }
     setupAutocomplete(document.getElementById('partyInput'), document.getElementById('partyDropdown'), v=>{ state.party = v; updateSaveEnabled(); saveDraft(); });
     setupAutocomplete(document.getElementById('areaInput'), document.getElementById('areaDropdown'), v=>{ state.area = v; updateSaveEnabled(); saveDraft(); });
+    const invStoreSel = document.getElementById('invoiceStoreSelect');
+    if(invStoreSel){
+      invStoreSel.addEventListener('change', e=>{
+        state.store = e.target.value;
+        renderItems();
+        saveDraft();
+      });
+    }
     const devInp = document.getElementById('deviceNameInput');
     if(devInp){
       devInp.addEventListener('input', e=>{ state.deviceName = e.target.value; saveDeviceName(e.target.value); saveDraft(); });
@@ -1622,14 +1806,15 @@ function renderItems(){
     const prodName = product ? product.name : (item.customName || "").trim();
     let stockBadgeHtml = "";
     if(prodName){
-      const curStock = getProductStock(prodName);
+      const activeInv = isTransfer ? (state.fromStore || "مخزون رئيسي") : (state.store || savedUserInventory || "مخزون رئيسي");
+      const curStock = getProductStock(prodName, activeInv);
       const reqDozens = item.unit === 'dozen' ? (Number(item.qty) || 0) : ((Number(item.qty) || 0) / 12);
       let badgeCls = "stock-badge ok";
-      let badgeTxt = `المتاح: ${fmtDozens(curStock)}`;
-      if(state.type === 'sale'){
+      let badgeTxt = `المتاح في ${getInvShortName(activeInv)}: ${fmtDozens(curStock)}`;
+      if(state.type === 'sale' || isTransfer){
         if(reqDozens > curStock){
           badgeCls = "stock-badge danger";
-          badgeTxt = `⚠️ عجز: متاح ${fmtDozens(curStock)} والمطلوب ${fmtDozens(reqDozens)}`;
+          badgeTxt = `⚠️ عجز: متاح في ${getInvShortName(activeInv)} (${fmtDozens(curStock)}) والمطلوب (${fmtDozens(reqDozens)})`;
         } else if(curStock < 1){
           badgeCls = "stock-badge warning";
         }
@@ -1775,7 +1960,8 @@ function updateSaveEnabled(){
   const hasItems = state.items.length > 0 && state.items.some(it=> (it.productId!=null || (it.customName && it.customName.trim()!=='')) && it.qty > 0);
 
   if(isTransfer){
-    document.getElementById('saveBtn').disabled = !hasItems;
+    const validStores = !!(state.fromStore && state.toStore && state.fromStore !== state.toStore);
+    document.getElementById('saveBtn').disabled = !(hasItems && validStores);
     saveDraft();
     return;
   }
@@ -1847,7 +2033,20 @@ function refreshQuickPayHighlight(){
 
 /* ================= RESET / SAVE ================= */
 function resetForm(){
-  state = {type: state.type, party:"", area:"", deviceName: savedDeviceName || "", fromStore:"", toStore:"", note:"", items:[], pay:{vodafone:0,instapay:0,cash:0,credit:0}};
+  const defaultFrom = savedUserInventory || "مخزون رئيسي";
+  const defaultTo = (defaultFrom === "مخزون رئيسي") ? "مخزون العربية النص" : "مخزون رئيسي";
+  state = {
+    type: state.type,
+    party: "",
+    area: "",
+    deviceName: savedDeviceName || "",
+    store: savedUserInventory || "مخزون رئيسي",
+    fromStore: defaultFrom,
+    toStore: defaultTo,
+    note: "",
+    items: [],
+    pay: {vodafone:0,instapay:0,cash:0,credit:0}
+  };
   document.getElementById('payVodafone').value = "";
   document.getElementById('payInstapay').value = "";
   document.getElementById('payCash').value = "";
@@ -1862,7 +2061,16 @@ document.getElementById('resetBtn').addEventListener('click', resetForm);
 document.getElementById('addItemBtn').addEventListener('click', addItemRow);
 
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
-  if(state.type !== 'transfer'){
+  if(state.type === 'transfer'){
+    if(!state.fromStore || !state.toStore){
+      showToast('يرجى تحديد مخزن المصدر ومخزن الوجهة');
+      return;
+    }
+    if(state.fromStore === state.toStore){
+      showToast('⚠️ لا يمكن التحويل من وإلى نفس المخزن');
+      return;
+    }
+  } else {
     if(!state.party || !state.party.trim()){
       showToast('يرجى اختيار أو كتابة اسم العميل أولاً');
       document.getElementById('partyInput')?.focus();
@@ -1885,6 +2093,7 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
     type: state.type,
     shopName,
     deviceName: deviceName || "عام",
+    store: state.store || savedUserInventory || "مخزون رئيسي",
     party: state.party,
     area: state.area,
     fromStore: state.fromStore,
@@ -1997,7 +2206,8 @@ async function renderInvoiceList(){
   wrap.innerHTML = "";
   invoices.forEach(inv=>{
     const t = typeMeta(inv.type);
-    const partyText = inv.type==='transfer' ? `${inv.fromStore||'—'} ← ${inv.toStore||'—'}` : (inv.party || '—');
+    const partyText = inv.type==='transfer' ? `${inv.fromStore||'—'} ⬅️ ${inv.toStore||'—'}` : (inv.party || '—');
+    const storeBadge = (inv.type!=='transfer' && inv.store) ? `<span style="font-size:10px;background:#e0f2fe;color:#0369a1;padding:1px 5px;border-radius:4px;margin-left:4px;">${getInvShortName(inv.store)}</span>` : "";
     const rightVal = inv.type==='transfer' ? `${inv.items.reduce((s,it)=>s+(Number(it.qty)||0),0)} قطعة/دستة` : fmt(inv.total);
     const el = document.createElement('div');
     el.className = 'inv-card';
@@ -2005,7 +2215,7 @@ async function renderInvoiceList(){
       <div class="inv-badge ${inv.type}"></div>
       <div class="inv-info">
         <div class="top"><span>${inv.number}</span><span>${rightVal}</span></div>
-        <div class="bottom"><span>${inv.deviceName ? `<span style="font-size:11px;background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:4px;margin-left:4px;">${inv.deviceName}</span>` : ""}${partyText}</span><span>${inv.date}</span></div>
+        <div class="bottom"><span>${inv.deviceName ? `<span style="font-size:11px;background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:4px;margin-left:4px;">${inv.deviceName}</span>` : ""}${storeBadge}${partyText}</span><span>${inv.date}</span></div>
       </div>
     `;
     el.addEventListener('click', ()=> openReceipt(inv));
@@ -2079,10 +2289,11 @@ function openReceipt(invoice){
   const t = typeMeta(invoice.type);
   const isTransfer = invoice.type === 'transfer';
   const partyLine = invoice.type==='transfer'
-    ? `من: ${invoice.fromStore||'—'} &nbsp;&nbsp;→&nbsp;&nbsp; إلى: ${invoice.toStore||'—'}`
+    ? `<span style="color:#B91C1C;font-weight:800;">🔻 من مخزن: ${invoice.fromStore||'—'} (منصرف -)</span> &nbsp;&nbsp;|&nbsp;&nbsp; <span style="color:#15803D;font-weight:800;">🔺 إلى مخزن: ${invoice.toStore||'—'} (وارد +)</span>`
     : [
         invoice.party ? `${t.partyLabel}: ${invoice.party}` : "",
-        invoice.area ? `المنطقة: ${invoice.area}` : ""
+        invoice.area ? `المنطقة: ${invoice.area}` : "",
+        invoice.store ? `المخزن: ${invoice.store}` : ""
       ].filter(Boolean).join(" &nbsp;&nbsp;|&nbsp;&nbsp; ");
 
   const rows = invoice.items.map(it=> isTransfer ? `
@@ -2251,39 +2462,71 @@ if(shareTopBtn) shareTopBtn.addEventListener('click', function(){ shareInvoiceAs
 
 
 /* ================= STOCK & EXCEL MANAGEMENT ENGINE ================= */
-let OPENING_BALANCES = {};
+let STOCK_BALANCES = {
+  "مخزون رئيسي": {},
+  "مخزون العربية النص": {},
+  "مخزون العربيه الربع": {}
+};
+let OPENING_BALANCES = {
+  "مخزون رئيسي": {},
+  "مخزون العربية النص": {},
+  "مخزون العربيه الربع": {}
+};
+let selectedStockInventory = "مخزون رئيسي";
+
+function ensureInventoryExists(inv){
+  if(!STOCK_BALANCES[inv]) STOCK_BALANCES[inv] = {};
+  if(!OPENING_BALANCES[inv]) OPENING_BALANCES[inv] = {};
+}
 
 async function loadStockBalances(){
+  INVENTORIES.forEach(inv => {
+    if(!STOCK_BALANCES[inv]) STOCK_BALANCES[inv] = {};
+    if(!OPENING_BALANCES[inv]) OPENING_BALANCES[inv] = {};
+  });
+
   try{
     const r = await window.storage.get('stock:balances', false);
     if(r && r.value) {
-      STOCK_BALANCES = JSON.parse(r.value);
-    } else {
-      STOCK_BALANCES = {};
-      PRODUCTS.forEach(p => { STOCK_BALANCES[p.name] = 0; });
+      const parsed = JSON.parse(r.value);
+      // Migration check: is parsed data flat (e.g. parsed['صنف'] is number)?
+      const isMulti = INVENTORIES.some(inv => parsed && typeof parsed[inv] === 'object' && parsed[inv] !== null);
+      if(isMulti){
+        INVENTORIES.forEach(inv => {
+          STOCK_BALANCES[inv] = parsed[inv] || {};
+        });
+      } else if(parsed && typeof parsed === 'object') {
+        // Flat legacy object: assign everything safely to 'مخزون رئيسي'
+        STOCK_BALANCES["مخزون رئيسي"] = parsed || {};
+        STOCK_BALANCES["مخزون العربية النص"] = {};
+        STOCK_BALANCES["مخزون العربيه الربع"] = {};
+      }
     }
-  }catch(e){
-    STOCK_BALANCES = {};
-    PRODUCTS.forEach(p => { STOCK_BALANCES[p.name] = 0; });
-  }
+  }catch(e){}
 
-  // Ensure any newly added product exists with 0 default balance
-  PRODUCTS.forEach(p => {
-    if(STOCK_BALANCES[p.name] === undefined){
-      STOCK_BALANCES[p.name] = 0;
-    }
+  // Ensure all products exist in all inventories with at least 0
+  INVENTORIES.forEach(inv => {
+    PRODUCTS.forEach(p => {
+      if(STOCK_BALANCES[inv][p.name] === undefined){
+        STOCK_BALANCES[inv][p.name] = 0;
+      }
+    });
   });
 
   try{
     const ro = await window.storage.get('stock:opening_balances', false);
     if(ro && ro.value) {
-      OPENING_BALANCES = JSON.parse(ro.value);
-    } else {
-      OPENING_BALANCES = {};
+      const parsedRo = JSON.parse(ro.value);
+      const isMultiRo = INVENTORIES.some(inv => parsedRo && typeof parsedRo[inv] === 'object' && parsedRo[inv] !== null);
+      if(isMultiRo){
+        INVENTORIES.forEach(inv => {
+          OPENING_BALANCES[inv] = parsedRo[inv] || {};
+        });
+      } else if(parsedRo && typeof parsedRo === 'object') {
+        OPENING_BALANCES["مخزون رئيسي"] = parsedRo || {};
+      }
     }
-  }catch(e){
-    OPENING_BALANCES = {};
-  }
+  }catch(e){}
 
   return STOCK_BALANCES;
 }
@@ -2327,9 +2570,20 @@ async function saveProductsCatalog(){
   }catch(e){}
 }
 
-function getProductStock(name){
+function getProductStock(name, invName){
   if(!name) return 0;
-  return STOCK_BALANCES[name] != null ? Number(STOCK_BALANCES[name]) : 0;
+  if(invName === 'all'){
+    return INVENTORIES.reduce((sum, inv) => {
+      const val = STOCK_BALANCES[inv]?.[name];
+      return sum + (val != null ? Number(val) : 0);
+    }, 0);
+  }
+  const inv = (invName && INVENTORIES.includes(invName))
+    ? invName
+    : (state.type === 'transfer' ? (state.fromStore || "مخزون رئيسي") : (state.store || savedUserInventory || "مخزون رئيسي"));
+
+  if(!STOCK_BALANCES[inv]) return 0;
+  return STOCK_BALANCES[inv][name] != null ? Number(STOCK_BALANCES[inv][name]) : 0;
 }
 
 function fmtDozens(d){
@@ -2348,17 +2602,49 @@ function fmtDozens(d){
 
 async function adjustStockForInvoice(invoice, isRollback = false){
   if(!invoice || !invoice.items || !Array.isArray(invoice.items)) return;
+
+  if(invoice.type === 'transfer'){
+    const fromInv = invoice.fromStore || "مخزون رئيسي";
+    const toInv = invoice.toStore || "مخزون العربية النص";
+    if(fromInv === toInv) return;
+
+    ensureInventoryExists(fromInv);
+    ensureInventoryExists(toInv);
+
+    // التحويل: المنصرف منه ينقص (-) والوارد إليه يزيد (+)
+    // عند الحذف (الاسترجاع): المنصرف منه يرجع له (+) والوارد إليه ينقص منه (-)
+    const fromDir = isRollback ? 1 : -1;
+    const toDir = isRollback ? -1 : 1;
+
+    invoice.items.forEach(it => {
+      const qtyDozens = it.unit === 'dozen' ? (Number(it.qty) || 0) : ((Number(it.qty) || 0) / 12);
+      const name = it.name ? it.name.trim() : "";
+      if(name){
+        const curFrom = STOCK_BALANCES[fromInv][name] != null ? Number(STOCK_BALANCES[fromInv][name]) : 0;
+        STOCK_BALANCES[fromInv][name] = Math.round((curFrom + (fromDir * qtyDozens)) * 100) / 100;
+
+        const curTo = STOCK_BALANCES[toInv][name] != null ? Number(STOCK_BALANCES[toInv][name]) : 0;
+        STOCK_BALANCES[toInv][name] = Math.round((curTo + (toDir * qtyDozens)) * 100) / 100;
+      }
+    });
+    await saveStockBalances();
+    return;
+  }
+
   let dir = 0;
   if(invoice.type === 'sale') dir = isRollback ? 1 : -1;
   else if(invoice.type === 'purchase' || invoice.type === 'return') dir = isRollback ? -1 : 1;
   else return;
 
+  const targetInv = invoice.store || savedUserInventory || "مخزون رئيسي";
+  ensureInventoryExists(targetInv);
+
   invoice.items.forEach(it => {
     const qtyDozens = it.unit === 'dozen' ? (Number(it.qty) || 0) : ((Number(it.qty) || 0) / 12);
     const name = it.name ? it.name.trim() : "";
     if(name){
-      const cur = STOCK_BALANCES[name] != null ? Number(STOCK_BALANCES[name]) : 0;
-      STOCK_BALANCES[name] = Math.round((cur + (dir * qtyDozens)) * 100) / 100;
+      const cur = STOCK_BALANCES[targetInv][name] != null ? Number(STOCK_BALANCES[targetInv][name]) : 0;
+      STOCK_BALANCES[targetInv][name] = Math.round((cur + (dir * qtyDozens)) * 100) / 100;
     }
   });
   await saveStockBalances();
@@ -2368,6 +2654,24 @@ function renderStockScreen(filter, query){
   if(filter != null) currentStockFilter = filter;
   if(query != null) currentStockQuery = query.trim().toLowerCase();
 
+  // تحديث أزرار تبويب المخازن
+  document.querySelectorAll('.inv-tab-btn').forEach(btn => {
+    const match = btn.dataset.inv === selectedStockInventory;
+    btn.classList.toggle('active', match);
+  });
+  const currentInvLbl = document.getElementById('currentStockInventoryLbl');
+  if(currentInvLbl){
+    if(selectedStockInventory === 'all'){
+      currentInvLbl.textContent = '🌐 إجمالي كل المخازن';
+      currentInvLbl.style.background = '#fef3c7';
+      currentInvLbl.style.color = '#92400e';
+    } else {
+      currentInvLbl.textContent = `${getInvIcon(selectedStockInventory)} ${selectedStockInventory}`;
+      currentInvLbl.style.background = '#e0f2fe';
+      currentInvLbl.style.color = '#0369a1';
+    }
+  }
+
   const wrap = document.getElementById('stockListContainer');
   let list = PRODUCTS;
   if(currentStockQuery){
@@ -2376,11 +2680,11 @@ function renderStockScreen(filter, query){
   }
   if(currentStockFilter === 'low'){
     list = list.filter(p => {
-      const b = getProductStock(p.name);
+      const b = getProductStock(p.name, selectedStockInventory);
       return b > 0 && b < 1;
     });
   } else if(currentStockFilter === 'zero'){
-    list = list.filter(p => getProductStock(p.name) <= 0);
+    list = list.filter(p => getProductStock(p.name, selectedStockInventory) <= 0);
   }
 
   // Update stat cards
@@ -2388,7 +2692,7 @@ function renderStockScreen(filter, query){
   let totalDozens = 0;
   let lowCount = 0;
   PRODUCTS.forEach(p => {
-    const b = getProductStock(p.name);
+    const b = getProductStock(p.name, selectedStockInventory);
     totalDozens += Math.max(0, b);
     if(b < 1) lowCount++;
   });
@@ -2402,8 +2706,14 @@ function renderStockScreen(filter, query){
     return;
   }
 
+  const isAll = selectedStockInventory === 'all';
   let rowsHtml = list.map((p, idx) => {
-    const curDozens = getProductStock(p.name);
+    const curDozens = getProductStock(p.name, selectedStockInventory);
+    const qtyInputHtml = isAll
+      ? `<input type="number" step="any" class="stock-input-qty" disabled value="${curDozens}" title="اختر مخزناً محدداً لتعديل رصيده" style="background:#f1f5f9;cursor:not-allowed;color:#475569;">
+         <div style="font-size:10px;color:var(--ink-soft);margin-top:2px;">(إجمالي الكل)</div>`
+      : `<input type="number" step="any" class="stock-input-qty" data-name="${p.name}" value="${curDozens}">`;
+
     return `
       <tr>
         <td style="color:var(--ink-soft);text-align:center;">${idx+1}</td>
@@ -2415,7 +2725,7 @@ function renderStockScreen(filter, query){
           <div class="stock-dozen-txt">${fmtDozens(curDozens)}</div>
         </td>
         <td style="text-align:center;">
-          <input type="number" step="any" class="stock-input-qty" data-name="${p.name}" value="${curDozens}">
+          ${qtyInputHtml}
         </td>
         <td style="text-align:center;">
           <input type="number" class="stock-input-price" data-name="${p.name}" value="${p.price}">
@@ -2431,7 +2741,7 @@ function renderStockScreen(filter, query){
         <tr>
           <th style="width:36px;text-align:center;">#</th>
           <th>الصنف</th>
-          <th style="width:90px;text-align:center;">الرصيد (دستة)</th>
+          <th style="width:95px;text-align:center;">الرصيد (دستة)</th>
           <th style="width:95px;text-align:center;">سعر الدستة (ج)</th>
         </tr>
       </thead>
@@ -2440,10 +2750,13 @@ function renderStockScreen(filter, query){
   `;
 
   // Bind inputs
-  wrap.querySelectorAll('.stock-input-qty').forEach(inp => {
+  wrap.querySelectorAll('.stock-input-qty:not([disabled])').forEach(inp => {
     inp.addEventListener('input', e => {
       const name = e.target.dataset.name;
-      STOCK_BALANCES[name] = Number(e.target.value) || 0;
+      if(selectedStockInventory !== 'all'){
+        ensureInventoryExists(selectedStockInventory);
+        STOCK_BALANCES[selectedStockInventory][name] = Number(e.target.value) || 0;
+      }
     });
   });
   wrap.querySelectorAll('.stock-input-price').forEach(inp => {
@@ -2462,13 +2775,21 @@ function renderStockScreen(filter, query){
   });
 }
 
+// تبويبات اختيار المخزن في شاشة الجرد
+document.querySelectorAll('.inv-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedStockInventory = btn.dataset.inv || "مخزون رئيسي";
+    renderStockScreen();
+  });
+});
+
 // Search and filter listeners
 document.getElementById('stockSearchInput').addEventListener('input', e => {
   renderStockScreen(null, e.target.value);
 });
-document.querySelectorAll('.stock-filter-chip').forEach(chip => {
+document.querySelectorAll('.stock-filter-chip:not(.inv-tab-btn)').forEach(chip => {
   chip.addEventListener('click', () => {
-    document.querySelectorAll('.stock-filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.stock-filter-chip:not(.inv-tab-btn)').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     renderStockScreen(chip.dataset.filter, null);
   });
@@ -2555,35 +2876,82 @@ document.getElementById('exportStockExcelBtn').addEventListener('click', async (
     showToast('مكتبة الإكسيل غير جاهزة');
     return;
   }
-  const data = [
-    ["م", "اسم الصنف", "الرصيد (دستة)", "سعر الدستة (جنيه)", "القيمة الإجمالية (جنيه)"]
-  ];
-  let grandDozens = 0;
-  let grandValue = 0;
-  PRODUCTS.forEach((p, i) => {
-    const dVal = getProductStock(p.name);
-    const dozenPrice = p.price || 0;
-    const lineVal = Math.round(dVal * dozenPrice * 100) / 100;
-    grandDozens += dVal;
-    grandValue += lineVal;
-    data.push([i+1, p.name, dVal, dozenPrice, lineVal]);
-  });
-  data.push(["", "الإجمالي", Math.round(grandDozens*100)/100, "", Math.round(grandValue*100)/100]);
-
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{ wch: 6 }, { wch: 25 }, { wch: 15 }, { wch: 18 }, { wch: 20 }];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "المخزون");
   const dateStr = new Date().toISOString().slice(0,10);
-  const arabicFileName = `جرد_مخزن_الصياد_${dateStr}.xlsx`;
-  const asciiFileName = `sayad_inventory_${dateStr}.xlsx`;
-  await downloadWorkbookAsXlsx(wb, arabicFileName, asciiFileName);
+  const wb = XLSX.utils.book_new();
+
+  if(selectedStockInventory === 'all'){
+    // تصدير جرد شامل لجميع المخازن الثلاثة
+    const data = [
+      ["م", "اسم الصنف", "مخزون رئيسي", "مخزون العربية النص", "مخزون العربيه الربع", "إجمالي الأرصدة (دستة)", "سعر الدستة (جنيه)", "القيمة الإجمالية (جنيه)"]
+    ];
+    let grandTotalMain = 0;
+    let grandTotalHalf = 0;
+    let grandTotalQuarter = 0;
+    let grandDozens = 0;
+    let grandValue = 0;
+
+    PRODUCTS.forEach((p, i) => {
+      const mVal = getProductStock(p.name, "مخزون رئيسي");
+      const hVal = getProductStock(p.name, "مخزون العربية النص");
+      const qVal = getProductStock(p.name, "مخزون العربيه الربع");
+      const totD = Math.round((mVal + hVal + qVal) * 100) / 100;
+      const dozenPrice = p.price || 0;
+      const lineVal = Math.round(totD * dozenPrice * 100) / 100;
+
+      grandTotalMain += mVal;
+      grandTotalHalf += hVal;
+      grandTotalQuarter += qVal;
+      grandDozens += totD;
+      grandValue += lineVal;
+
+      data.push([i+1, p.name, mVal, hVal, qVal, totD, dozenPrice, lineVal]);
+    });
+    data.push(["", "الإجمالي العام",
+      Math.round(grandTotalMain*100)/100,
+      Math.round(grandTotalHalf*100)/100,
+      Math.round(grandTotalQuarter*100)/100,
+      Math.round(grandDozens*100)/100,
+      "",
+      Math.round(grandValue*100)/100
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{ wch: 6 }, { wch: 25 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 20 }, { wch: 18 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, ws, "جرد_كل_المخازن");
+    const arabicFileName = `جرد_شامل_جميع_المخازن_${dateStr}.xlsx`;
+    const asciiFileName = `sayad_all_inventories_${dateStr}.xlsx`;
+    await downloadWorkbookAsXlsx(wb, arabicFileName, asciiFileName);
+  } else {
+    // تصدير جرد المخزن المحدد فقط
+    const data = [
+      ["م", "اسم الصنف", `الرصيد (${selectedStockInventory})`, "سعر الدستة (جنيه)", "القيمة الإجمالية (جنيه)"]
+    ];
+    let grandDozens = 0;
+    let grandValue = 0;
+    PRODUCTS.forEach((p, i) => {
+      const dVal = getProductStock(p.name, selectedStockInventory);
+      const dozenPrice = p.price || 0;
+      const lineVal = Math.round(dVal * dozenPrice * 100) / 100;
+      grandDozens += dVal;
+      grandValue += lineVal;
+      data.push([i+1, p.name, dVal, dozenPrice, lineVal]);
+    });
+    data.push(["", "الإجمالي", Math.round(grandDozens*100)/100, "", Math.round(grandValue*100)/100]);
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{ wch: 6 }, { wch: 25 }, { wch: 22 }, { wch: 18 }, { wch: 20 }];
+    const safeSheetName = selectedStockInventory.replace(/[\/\*\[\]\:\?]/g, '').slice(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+    const safeInv = selectedStockInventory.replace(/\s+/g, '_');
+    const arabicFileName = `جرد_${safeInv}_${dateStr}.xlsx`;
+    const asciiFileName = `sayad_inventory_${dateStr}.xlsx`;
+    await downloadWorkbookAsXlsx(wb, arabicFileName, asciiFileName);
+  }
   showToast('تم تصدير ملف الإكسيل بنجاح ✅');
 });
 
 // Download empty template with exact upload headers
 document.getElementById('downloadTemplateBtn').addEventListener('click', async () => {
-  // Method 1: If showSaveFilePicker is available (Chrome Desktop), let user save with Arabic name
   if (typeof window.showSaveFilePicker === 'function') {
     try {
       const resp = await fetch('./sayad_stock_template.xlsx');
@@ -2606,7 +2974,6 @@ document.getElementById('downloadTemplateBtn').addEventListener('click', async (
     }
   }
 
-  // Method 2: Direct download of the pre-generated static xlsx file from server
   const a = document.createElement('a');
   a.href = './sayad_stock_template.xlsx';
   a.download = 'sayad_stock_template.xlsx';
@@ -2618,12 +2985,11 @@ document.getElementById('downloadTemplateBtn').addEventListener('click', async (
   showToast('تم تحميل نموذج الإكسيل بنجاح 📄');
 });
 
-// Reset / Zero all stock quantities (Two-step inline confirmation, no blocking browser dialog)
+// Reset / Zero all stock quantities (Two-step inline confirmation)
 let zeroConfirmTimeout = null;
 const zeroBtn = document.getElementById('zeroAllStockBtn');
 zeroBtn.addEventListener('click', async () => {
   if (zeroBtn.dataset.confirming === 'true') {
-    // Second click: execute reset
     clearTimeout(zeroConfirmTimeout);
     zeroBtn.dataset.confirming = 'false';
     zeroBtn.innerHTML = '🧹 تصفير المخزون';
@@ -2632,24 +2998,37 @@ zeroBtn.addEventListener('click', async () => {
     zeroBtn.style.color = 'var(--danger)';
     zeroBtn.style.fontWeight = '';
 
-    for (let key in STOCK_BALANCES) {
-      STOCK_BALANCES[key] = 0;
+    if(selectedStockInventory === 'all'){
+      INVENTORIES.forEach(inv => {
+        ensureInventoryExists(inv);
+        for (let key in STOCK_BALANCES[inv]) STOCK_BALANCES[inv][key] = 0;
+        for (let key in OPENING_BALANCES[inv]) OPENING_BALANCES[inv][key] = 0;
+        PRODUCTS.forEach(p => {
+          STOCK_BALANCES[inv][p.name] = 0;
+          OPENING_BALANCES[inv][p.name] = 0;
+        });
+      });
+      await saveStockBalances();
+      await saveOpeningBalances();
+      renderStockScreen();
+      showToast('تم تصفير جميع المخازن بالكامل (0 دستة) بنجاح 🧹');
+    } else {
+      ensureInventoryExists(selectedStockInventory);
+      for (let key in STOCK_BALANCES[selectedStockInventory]) STOCK_BALANCES[selectedStockInventory][key] = 0;
+      for (let key in OPENING_BALANCES[selectedStockInventory]) OPENING_BALANCES[selectedStockInventory][key] = 0;
+      PRODUCTS.forEach(p => {
+        STOCK_BALANCES[selectedStockInventory][p.name] = 0;
+        OPENING_BALANCES[selectedStockInventory][p.name] = 0;
+      });
+      await saveStockBalances();
+      await saveOpeningBalances();
+      renderStockScreen();
+      showToast(`تم تصفير (${selectedStockInventory}) بنجاح 🧹`);
     }
-    for (let key in OPENING_BALANCES) {
-      OPENING_BALANCES[key] = 0;
-    }
-    PRODUCTS.forEach(p => {
-      STOCK_BALANCES[p.name] = 0;
-      OPENING_BALANCES[p.name] = 0;
-    });
-    await saveStockBalances();
-    await saveOpeningBalances();
-    renderStockScreen();
-    showToast('تم تصفير جميع كميات المخزون بالكامل (0 دستة) بنجاح 🧹');
   } else {
-    // First click: prompt for confirmation directly on button
     zeroBtn.dataset.confirming = 'true';
-    zeroBtn.innerHTML = '⚠️ متأكد؟ اضغط هنا لتأكيد التصفير';
+    const targetName = selectedStockInventory === 'all' ? 'جميع المخازن' : selectedStockInventory;
+    zeroBtn.innerHTML = `⚠️ متأكد؟ اضغط لتصفير ${targetName}`;
     zeroBtn.style.background = '#FEE2E2';
     zeroBtn.style.borderColor = '#EF4444';
     zeroBtn.style.color = '#B91C1C';
@@ -2703,6 +3082,9 @@ document.getElementById('excelStockInput').addEventListener('change', async (e) 
       if(dozenCol === -1) dozenCol = 1;
       if(priceCol === -1 && json[0].length >= 3) priceCol = 2;
 
+      const targetInv = selectedStockInventory === 'all' ? "مخزون رئيسي" : selectedStockInventory;
+      ensureInventoryExists(targetInv);
+
       let updatedCount = 0;
       let newCount = 0;
 
@@ -2723,16 +3105,21 @@ document.getElementById('excelStockInput').addEventListener('change', async (e) 
           price = Number(row[priceCol]) || null;
         }
 
-        let p = PRODUCTS.find(pp => pp.name === rawName || pp.name.replace(/\\s+/g,'') === rawName.replace(/\\s+/g,''));
+        let p = PRODUCTS.find(pp => pp.name === rawName || pp.name.replace(/\s+/g,'') === rawName.replace(/\s+/g,''));
         if(p){
-          STOCK_BALANCES[p.name] = dozens;
-          if(OPENING_BALANCES[p.name] == null) OPENING_BALANCES[p.name] = dozens;
+          STOCK_BALANCES[targetInv][p.name] = dozens;
+          if(OPENING_BALANCES[targetInv][p.name] == null) OPENING_BALANCES[targetInv][p.name] = dozens;
           if(price != null && price > 0) p.price = price;
           updatedCount++;
         } else {
           PRODUCTS.push({id: PRODUCTS.length, name: rawName, price: price || 0});
-          STOCK_BALANCES[rawName] = dozens;
-          OPENING_BALANCES[rawName] = dozens;
+          INVENTORIES.forEach(inv => {
+            ensureInventoryExists(inv);
+            if(STOCK_BALANCES[inv][rawName] === undefined) STOCK_BALANCES[inv][rawName] = 0;
+            if(OPENING_BALANCES[inv][rawName] === undefined) OPENING_BALANCES[inv][rawName] = 0;
+          });
+          STOCK_BALANCES[targetInv][rawName] = dozens;
+          OPENING_BALANCES[targetInv][rawName] = dozens;
           newCount++;
         }
       }
@@ -2741,7 +3128,7 @@ document.getElementById('excelStockInput').addEventListener('change', async (e) 
       await saveOpeningBalances();
       await saveProductsCatalog();
       renderStockScreen();
-      showToast(`تم استيراد الجرد: تحديث ${updatedCount} صنف و إضافة ${newCount} صنف جديد ✅`);
+      showToast(`تم استيراد الجرد إلى (${targetInv}): تحديث ${updatedCount} صنف وإضافة ${newCount} جديد ✅`);
     }catch(err){
       console.error(err);
       showToast('خطأ في قراءة ملف الإكسيل');
@@ -3861,15 +4248,25 @@ const saveDevBtn = document.getElementById('saveDeviceSetupBtn');
 if(saveDevBtn){
   saveDevBtn.addEventListener('click', async ()=>{
     const input = document.getElementById('deviceSetupInput');
+    const invSelect = document.getElementById('deviceSetupInventorySelect');
     const val = (input?.value || "").trim();
     if(!val){
       showToast('يرجى إدخال اسم المندوب أو الجهاز');
       if(input) input.focus();
       return;
     }
-    await saveDeviceName(val);
+    const chosenInv = (invSelect?.value || savedUserInventory || "مخزون رئيسي").trim();
+    await saveDeviceSettings(val, chosenInv);
     closeDeviceSetupModal();
-    showToast(`تم حفظ اسم المندوب: ${val} بنجاح ✅`);
+    showToast(`تم حفظ المندوب: ${val} (${getInvShortName(chosenInv)}) بنجاح ✅`);
+    if(state.type === 'transfer'){
+      state.fromStore = chosenInv;
+      state.toStore = (chosenInv === "مخزون رئيسي") ? "مخزون العربية النص" : "مخزون رئيسي";
+    } else {
+      state.store = chosenInv;
+    }
+    renderPartyCard();
+    renderItems();
   });
 }
 
