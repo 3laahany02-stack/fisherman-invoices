@@ -1,4 +1,4 @@
-const CACHE_NAME = 'invoice-app-v31';
+const CACHE_NAME = 'invoice-app-v32';
 const ASSETS = ['./', './index.html', './xlsx.full.min.js', './sayad_stock_template.xlsx'];
 
 self.addEventListener('install', (event) => {
