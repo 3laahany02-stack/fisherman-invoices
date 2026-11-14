@@ -1300,8 +1300,48 @@ const TYPES = [
   {key:"return", label:"مرتجع", sub:"إرجاع بضاعة", partyLabel:"اسم العميل", prefix:"مر"},
 ];
 
-const AREAS = ["القوصية","ملاوي","العدوة","المنيا","اسيوط","مغاغة","بني مزار","سمالوط","دايروط","منفلوط","ابو قرقاس","ابشواي","الواسطة","طما","طاميا","المحلة"];
-const CUSTOMERS = [
+const AREAS = ["القوصية","ملاوي","العدوة","المنيا","اسيوط","مغاغة","بني مزار","سمالوط","دايروط","منفلوط","ابو قرقاس","ابشواي","الواسطة","بوش","سوهاج","جرجا","دار السلام","طنطا","ابو تيج","طما","طاميا","المحلة"];
+
+// عملاء مخزون العربية الربع (حصرياً لهذا المخزن فقط)
+const CUSTOMERS_ROB3 = [
+  "ابو امير الواسطة",
+  "ابو عبود الصياد",
+  "مصطفي الواسطة",
+  "ابو حسن الواسطة",
+  "نادر جلال",
+  "محمد سيد بوش",
+  "المنسي",
+  "احمد المنياوي",
+  "محمود المغربي",
+  "صلاح عبد الوهاب",
+  "محمود سليمان طنطا",
+  "مصطفي طنطا",
+  "محمد عبدالفتاح",
+  "محمود الحبيب",
+  "ايمن احمد دار السلام",
+  "الشيخ احمد جرجا",
+  "عبدالله جرجا",
+  "ايمن روعة سوهاج",
+  "مصطفي سوهاج",
+  "وائل سوهاج",
+  "مصطفي العربي",
+  "سلطان سوهاج",
+  "هيثم سوهاج",
+  "ام عبدالله ابو تيج",
+  "مايكل",
+  "محمود ثابت ابو تيج",
+  "ابو مينا",
+  "البوب",
+  "ريمون",
+  "الشيخ محمد عبدالرحمن",
+  "عبدو اسيوط",
+  "ايهاب عجوة اسيوط",
+  "حمادة زين اسيوط",
+  "حسين ناصر اسيوط"
+];
+
+// عملاء باقي المخازن العامة
+const CUSTOMERS_GENERAL = [
   "الصياد",
   "ابو محمد العدوة",
   "ام يوسف العدوة",
@@ -1403,11 +1443,7 @@ const CUSTOMERS = [
   "محمد ابو عدي منفلوط",
   "ام مريم منفلوط",
   "محمد زين اسيوط",
-  "حمادة زين اسيوط",
-  "ايهاب عجوة اسيوط",
   "احمد عطية اسيوط",
-  "عبدو اسيوط",
-  "حسين ناصر اسيوط",
   "اسلام ملاوي",
   "حمادة جابر ملاوي",
   "ابو زياد ملاوي",
@@ -1439,7 +1475,6 @@ const CUSTOMERS = [
   "احمد حسين ابو قرقاس",
   "محمد علي ابو قرقاس",
   "اسلام ابو قرقاس",
-  "ابو حسن الواسطة",
   "ابو خالد ابشواي",
   "ابو حسام ابشواي",
   "احمد سامح ابشواي",
@@ -1526,6 +1561,52 @@ const CUSTOMERS = [
   "احمد جمال عربية",
   "ابو ياسين ابو قرقاس"
 ];
+
+function isRob3Store(storeName){
+  const s = (storeName || (typeof savedUserInventory !== 'undefined' ? savedUserInventory : "") || "مخزون رئيسي").trim();
+  return s === "مخزون العربيه الربع" || s === "مخزون العربية الربع" || s.includes("الربع");
+}
+
+function getCustomersForStore(storeName){
+  return isRob3Store(storeName) ? CUSTOMERS_ROB3 : CUSTOMERS_GENERAL;
+}
+
+function detectCustomerArea(name){
+  if(!name) return "";
+  const n = name.trim();
+  if(n.includes("الواسطة") || n.includes("الواسطه")) return "الواسطة";
+  if(n.includes("بوش")) return "بوش";
+  if(n.includes("سوهاج")) return "سوهاج";
+  if(n.includes("جرجا")) return "جرجا";
+  if(n.includes("دار السلام")) return "دار السلام";
+  if(n.includes("طنطا")) return "طنطا";
+  if(n.includes("ابو تيج") || n.includes("أبو تيج")) return "ابو تيج";
+  if(n.includes("اسيوط") || n.includes("أسيوط")) return "اسيوط";
+  if(n.includes("المنياوي") || n.includes("المنيا")) return "المنيا";
+  if(n.includes("ملاوي") || n.includes("ملوي")) return "ملاوي";
+  if(n.includes("القوصية") || n.includes("القوصيه")) return "القوصية";
+  if(n.includes("مغاغة") || n.includes("مغاغه")) return "مغاغة";
+  if(n.includes("بني مزار")) return "بني مزار";
+  if(n.includes("سمالوط")) return "سمالوط";
+  if(n.includes("دايروط") || n.includes("ديروط")) return "دايروط";
+  if(n.includes("منفلوط")) return "منفلوط";
+  if(n.includes("ابو قرقاس")) return "ابو قرقاس";
+  if(n.includes("العدوة") || n.includes("العدوه")) return "العدوة";
+  if(n.includes("ابشواي")) return "ابشواي";
+  if(n.includes("طما")) return "طما";
+  if(n.includes("طاميا")) return "طاميا";
+  if(n.includes("المحلة") || n.includes("المحله")) return "المحلة";
+  return "";
+}
+
+const CUSTOMERS = new Proxy([], {
+  get(target, prop){
+    const list = getCustomersForStore(typeof savedUserInventory !== 'undefined' ? savedUserInventory : "مخزون رئيسي");
+    if(prop === 'length') return list.length;
+    if(typeof list[prop] === 'function') return list[prop].bind(list);
+    return list[prop];
+  }
+});
 
 /* ================= INVENTORIES & STATE ================= */
 const INVENTORIES = [
@@ -2024,8 +2105,9 @@ function renderPartyCard(){
   } else {
     title.textContent = "بيانات الفاتورة";
     state.store = myInv;
+    const currentCusts = getCustomersForStore(myInv);
     const areaOptionsHtml = AREAS.map(a=>`<div class="area-option" data-value="${a}">${a}</div>`).join("");
-    const partyOptionsHtml = CUSTOMERS.map(c=>`<div class="area-option" data-value="${c}">${c}</div>`).join("");
+    const partyOptionsHtml = currentCusts.map(c=>`<div class="area-option" data-value="${c}">${c}</div>`).join("");
     card.innerHTML = `
       <div class="two-col">
         <div class="field area-field">
@@ -2080,7 +2162,19 @@ function renderPartyCard(){
         });
       });
     }
-    setupAutocomplete(document.getElementById('partyInput'), document.getElementById('partyDropdown'), v=>{ state.party = v; updateSaveEnabled(); saveDraft(); });
+    setupAutocomplete(document.getElementById('partyInput'), document.getElementById('partyDropdown'), v=>{
+      state.party = v;
+      if(!state.area || !state.area.trim()){
+        const detected = detectCustomerArea(v);
+        if(detected){
+          state.area = detected;
+          const aInp = document.getElementById('areaInput');
+          if(aInp) aInp.value = detected;
+        }
+      }
+      updateSaveEnabled();
+      saveDraft();
+    });
     setupAutocomplete(document.getElementById('areaInput'), document.getElementById('areaDropdown'), v=>{ state.area = v; updateSaveEnabled(); saveDraft(); });
     const invStoreSel = document.getElementById('invoiceStoreSelect');
     if(invStoreSel){
@@ -4094,16 +4188,38 @@ function setupPaymentMethodButtons(){
   updateBtnStyles();
 }
 
-async function getAllCustomerNames(){
+async function getAllCustomerNames(storeName){
+  const inv = (storeName || (typeof savedUserInventory !== 'undefined' ? savedUserInventory : "") || "مخزون رئيسي").trim();
+  const isRob3 = isRob3Store(inv);
+
+  if(isRob3){
+    // عند اختيار مخزن العربية الربع: لا يظهر سوى هؤلاء الـ 34 عميلاً فقط لا غير
+    const set = new Set();
+    CUSTOMERS_ROB3.forEach(c => { if(c && c.trim()) set.add(c.trim()); });
+    const arr = Array.from(set);
+    arr.sort((a,b)=> a.localeCompare(b, 'ar'));
+    return arr;
+  }
+
+  // عند اختيار أي مخزن آخر: لا يظهر أي عميل من عملاء العربية الربع إطلاقاً
+  const rob3Set = new Set(CUSTOMERS_ROB3.map(c=>c.trim()));
   const set = new Set();
-  CUSTOMERS.forEach(c => { if(c && c.trim()) set.add(c.trim()); });
+  CUSTOMERS_GENERAL.forEach(c => {
+    if(c && c.trim() && !rob3Set.has(c.trim())) set.add(c.trim());
+  });
   const invoices = await listInvoices();
   invoices.forEach(inv => {
-    if(inv.party && inv.party.trim()) set.add(inv.party.trim());
+    const p = (inv.party || "").trim();
+    if(p && !rob3Set.has(p) && !isRob3Store(inv.store)){
+      set.add(p);
+    }
   });
   const payments = await listPayments();
-  payments.forEach(p => {
-    if(p.party && p.party.trim()) set.add(p.party.trim());
+  payments.forEach(pay => {
+    const p = (pay.party || "").trim();
+    if(p && !rob3Set.has(p)){
+      set.add(p);
+    }
   });
   const arr = Array.from(set);
   arr.sort((a,b)=> a.localeCompare(b, 'ar'));
@@ -4550,6 +4666,11 @@ if(saveDevBtn){
       state.toStore = INVENTORIES.find(inv => inv !== chosenInv) || "مخزون رئيسي";
     } else {
       state.store = chosenInv;
+    }
+    const newAllowedCusts = getCustomersForStore(chosenInv);
+    if(state.party && !newAllowedCusts.includes(state.party)){
+      state.party = "";
+      state.area = "";
     }
     renderPartyCard();
     renderItems();
