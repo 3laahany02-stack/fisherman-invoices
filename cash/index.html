@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>دفتر حركة النقدية (وارد • منصرف • بيان • رصيد الكاش)</title>
+  
+  <meta name="theme-color" content="#0e6b5c">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230e6b5c'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>💵</text></svg>">
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <div class="top-brand">
+      <div class="brand-icon">💵</div>
+      <div>
+        <div class="brand-name">دفتر حركة النقدية</div>
+        <div class="brand-sub">وارد • منصرف • بيان • رصيد الكاش اللحظي</div>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button id="btn-export-excel" class="btn-icon" title="تصدير كشيت إكسيل Excel">
+        <span>📊 تصدير Excel</span>
+      </button>
+      <button id="btn-toggle-theme" class="btn-icon" title="الوضع الليلي / الفاتح">
+        🌙
+      </button>
+    </div>
+  </header>
+
+  <!-- Cash Summary Stats Cards -->
+  <section class="stats-grid">
+    <div class="stat-box primary-balance">
+      <div class="stat-title">رصيد الكاش الحالي (في اليد)</div>
+      <div id="stat-current-balance" class="balance-val">0 ج.م</div>
+      <div class="stat-sub">الصافي الفعلي المتبقي بعد كل الحركات</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-title">إجمالي الوارد (+)</div>
+      <div id="stat-total-in" class="balance-val text-in">0 ج.م</div>
+      <div class="stat-sub">كافة الإيرادات والمقبوضات</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-title">إجمالي المنصرف (-)</div>
+      <div id="stat-total-out" class="balance-val text-out">0 ج.م</div>
+      <div class="stat-sub">كافة المصروفات والمدفوعات</div>
+    </div>
+  </section>
+
+  <!-- Add Cash Movement Form -->
+  <section class="entry-card">
+    <div class="entry-header">تسجيل حركة نقدية جديدة (كاش)</div>
+
+    <form id="form-cash-entry">
+      <!-- Type Selector Buttons -->
+      <div class="type-buttons">
+        <button type="button" id="btn-type-out" class="type-btn out active">
+          <span>🔴 منصرف (-)</span>
+        </button>
+        <button type="button" id="btn-type-in" class="type-btn in">
+          <span>🟢 وارد (+)</span>
+        </button>
+      </div>
+
+      <!-- Inputs: Amount, Note, Date -->
+      <div class="form-inputs-grid">
+        <div class="form-field">
+          <label class="form-label">المبلغ (ج.م) *</label>
+          <input type="number" step="0.5" id="input-amount" class="form-input" placeholder="0.00" required autofocus>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">البيان (التفاصيل والملاحظات) *</label>
+          <input type="text" id="input-note" class="form-input" placeholder="مثال: غداء، تموين بنزين، سحب نقدي، مرتب..." required>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">التاريخ *</label>
+          <input type="date" id="input-date" class="form-input" required>
+        </div>
+      </div>
+
+      <button type="submit" id="entry-submit-btn" class="btn-submit btn-out">
+        - تسجيل منصرف
+      </button>
+    </form>
+  </section>
+
+  <!-- Ledger Table (دفتر النقدية) -->
+  <section class="ledger-card">
+    <div class="ledger-toolbar">
+      <div class="filter-group">
+        <button class="filter-btn active" data-period="all">كل الحركات</button>
+        <button class="filter-btn" data-period="this_month">هذا الشهر</button>
+        <button class="filter-btn" data-period="today">اليوم</button>
+        <span id="tx-count-badge" style="align-self:center; font-size:12px; color:var(--text-muted); font-weight:700; margin-right:8px;">0 حركة</span>
+      </div>
+
+      <input type="text" id="input-search" class="form-input search-input" placeholder="🔍 بحث في البيان أو التاريخ...">
+    </div>
+
+    <div class="table-wrapper">
+      <table class="ledger-table">
+        <thead>
+          <tr>
+            <th style="width: 40px; text-align:center;">م</th>
+            <th style="width: 110px;">التاريخ</th>
+            <th>البيان</th>
+            <th style="width: 130px; text-align:left;">وارد (+)</th>
+            <th style="width: 130px; text-align:left;">منصرف (-)</th>
+            <th style="width: 140px; text-align:right;">رصيد الكاش</th>
+            <th style="width: 50px; text-align:center;">حذف</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <!-- Injected via JS -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer-bar">
+    <div>دفتر حركة النقدية الشخصية • يعمل 100% دون إنترنت</div>
+    <button id="btn-reset-data" style="background:transparent; border:none; color:var(--text-light); font-size:12px; cursor:pointer;" title="تصفير الدفتر">
+      تصفير البيانات والبدء من جديد
+    </button>
+  </footer>
+
+</div>
+
+<!-- Scripts -->
+<script src="xlsx.full.min.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
